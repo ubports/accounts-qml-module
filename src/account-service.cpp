@@ -63,6 +63,12 @@
  */
 
 /*!
+ * \qmlproperty string AccountService::accountId
+ * The account's numeric ID; note that all AccountService objects which work on
+ * the same online account will have the same ID.
+ */
+
+/*!
  * \qmlproperty jsobject AccountService::settings
  * A dictionary of all the account service's settings. This does not
  * include the authentication settings, which are available from the
