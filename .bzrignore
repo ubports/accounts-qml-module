@@ -1,0 +1,5 @@
+Makefile
+moc_*
+/src/qmldir
+/src/Ubuntu
+/tests/tst_plugin
