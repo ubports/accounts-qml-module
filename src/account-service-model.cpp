@@ -31,6 +31,7 @@
  * \li \c settings is a dictionary of the settings of the account service
  * \li \c accountService is a handle to the underlying Qt object which can be
  *     used to instantiate an AccountService from QML
+ * \li \c accountId is numeric ID of the account
  * \endlist
  *
  * Examples of use:
