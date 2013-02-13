@@ -1,3 +1,7 @@
+/coverage-html
+/coverage.info
+*.gcda
+*.gcno
 Makefile
 moc_*
 /src/qmldir
