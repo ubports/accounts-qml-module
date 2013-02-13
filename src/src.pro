@@ -1,3 +1,5 @@
+include(../common-project-config.pri)
+
 TEMPLATE = lib
 TARGET = Accounts
 
