@@ -1,0 +1,24 @@
+Source: accounts-qml-module
+Section: libs
+Priority: optional
+Maintainer: Ubuntu Desktop Team <ubuntu-desktop@lists.ubuntu.com>
+Build-Depends: dbus-test-runner,
+               debhelper (>= 9),
+               libaccounts-qt5-dev,
+               libsignon-qt5-dev,
+               pkg-config,
+               qtdeclarative5-dev,
+               xvfb,
+Standards-Version: 3.9.3
+Homepage: https://launchpad.net/accounts-qml-module
+# If you aren't a member of ~online-accounts but need to upload packaging changes,
+# just go ahead.  ~online-accounts will notice and sync up the code again.
+Vcs-Bzr: https://code.launchpad.net/~online-accounts/accounts-qml-module/trunk
+
+Package: accounts-qml-module
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+Description: Expose the Online Accounts API to QML applications
+ This module provides access to the Online Accounts framework from QML
+ applications.
