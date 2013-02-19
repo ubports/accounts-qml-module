@@ -32,6 +32,6 @@ DEFINES += \
     SERVICE_TYPES_DIR=\\\"$$DATA_PATH\\\" \
     PROVIDERS_DIR=\\\"$$DATA_PATH\\\"
 
-check.commands = "LD_LIBRARY_PATH=mock:${LD_LIBRARY_PATH} ./$${TARGET}"
+check.commands = "LD_LIBRARY_PATH=mock:${LD_LIBRARY_PATH} xvfb-run -a dbus-test-runner -t ./$${TARGET}"
 check.depends = $${TARGET}
 QMAKE_EXTRA_TARGETS += check
