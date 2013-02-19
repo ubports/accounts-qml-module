@@ -2,8 +2,11 @@
 /coverage.info
 *.gcda
 *.gcno
+*.moc
+Makefile.*
 Makefile
 moc_*
 /src/qmldir
 /src/Ubuntu
+/tests/mock/libsignon-qt5.so.*
 /tests/tst_plugin

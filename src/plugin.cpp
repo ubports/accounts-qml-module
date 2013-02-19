@@ -16,6 +16,8 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "account-service-model.h"
+#include "account-service.h"
 #include "plugin.h"
 
 #include <QDebug>
@@ -26,5 +28,6 @@ using namespace OnlineAccounts;
 void Plugin::registerTypes(const char *uri)
 {
     qDebug() << Q_FUNC_INFO << uri;
-    qmlRegisterType<QObject>(uri, 0, 1, "AccountServiceModel");
+    qmlRegisterType<AccountServiceModel>(uri, 0, 1, "AccountServiceModel");
+    qmlRegisterType<AccountService>(uri, 0, 1, "AccountService");
 }

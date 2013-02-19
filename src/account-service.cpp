@@ -1,3 +1,48 @@
+/*
+ * Copyright (C) 2013 Canonical Ltd.
+ *
+ * Contact: Alberto Mardegan <alberto.mardegan@canonical.com>
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 3, as published
+ * by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranties of
+ * MERCHANTABILITY, SATISFACTORY QUALITY, or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "account-service.h"
+#include "debug.h"
+
+#include <Accounts/AccountService>
+#include <Accounts/Manager>
+#include <Accounts/Provider>
+#include <SignOn/AuthSession>
+#include <SignOn/Identity>
+
+using namespace OnlineAccounts;
+
+static QVariantMap mergeMaps(const QVariantMap &map1,
+                             const QVariantMap &map2)
+{
+    if (map1.isEmpty()) return map2;
+    if (map2.isEmpty()) return map1;
+
+    QVariantMap map = map1;
+    //map2 values will overwrite map1 values for the same keys.
+    QMapIterator<QString, QVariant> it(map2);
+    while (it.hasNext()) {
+        it.next();
+        map.insert(it.key(), it.value());
+    }
+    return map;
+}
+
 /*!
  * \qmltype AccountService
  * \inqmlmodule Ubuntu.OnlineAccounts 0.1
@@ -13,6 +58,17 @@
  *
  * See AccountServiceModel's documentation for usage examples.
  */
+AccountService::AccountService(QObject *parent):
+    QObject(parent),
+    accountService(0),
+    identity(0),
+    constructed(false)
+{
+}
+
+AccountService::~AccountService()
+{
+}
 
 /*!
  * \qmlproperty object AccountService::objectHandle
@@ -22,12 +78,46 @@
  * destroyed or if the account is deleted), expect the AccountService to become
  * invalid.
  */
+void AccountService::setObjectHandle(QObject *object)
+{
+    DEBUG() << object;
+    Accounts::AccountService *as =
+        qobject_cast<Accounts::AccountService*>(object);
+    if (Q_UNLIKELY(as == 0)) return;
+
+    if (as == accountService) return;
+    accountService = as;
+    QObject::connect(accountService, SIGNAL(changed()),
+                     this, SIGNAL(settingsChanged()));
+    delete identity;
+    identity = 0;
+    Q_EMIT objectHandleChanged();
+
+    /* If the object handle has been changed on a constructed component, we
+     * also emit the changed signals for all other properties, to make sure
+     * that all bindings are updated. */
+    if (constructed) {
+        Q_EMIT enabledChanged();
+        Q_EMIT displayNameChanged();
+        Q_EMIT settingsChanged();
+    }
+}
+
+QObject *AccountService::objectHandle() const
+{
+    return accountService;
+}
 
 /*!
  * \qmlproperty bool AccountService::enabled
  * This read-only property tells whether the AccountService is enabled. An
  * application shouldn't use an AccountService which is disabled.
  */
+bool AccountService::enabled() const
+{
+    if (Q_UNLIKELY(accountService == 0)) return false;
+    return accountService->enabled();
+}
 
 /*!
  * \qmlproperty jsobject AccountService::provider
@@ -36,10 +126,23 @@
  * \list
  * \li \c id is the unique identified for this provider
  * \li \c displayName
- * \li \c description
  * \li \c iconName
  * \endlist
  */
+QVariantMap AccountService::provider() const
+{
+    QVariantMap map;
+    if (Q_UNLIKELY(accountService == 0)) return map;
+
+    // TODO: use the new account->provider() method
+    Accounts::Account *account = accountService->account();
+    QString providerName = account->providerName();
+    Accounts::Provider provider = account->manager()->provider(providerName);
+    map.insert("id", provider.name());
+    map.insert("displayName", provider.displayName());
+    map.insert("iconName", provider.iconName());
+    return map;
+}
 
 /*!
  * \qmlproperty jsobject AccountService::service
@@ -49,11 +152,23 @@
  * \list
  * \li \c id is the unique identified for this service
  * \li \c displayName
- * \li \c description
  * \li \c iconName
  * \li \c serviceTypeId identifies the provided service type
  * \endlist
  */
+QVariantMap AccountService::service() const
+{
+    QVariantMap map;
+    if (Q_UNLIKELY(accountService == 0)) return map;
+
+    Accounts::Service service = accountService->service();
+    map.insert("id", service.name());
+    map.insert("displayName", service.displayName());
+    map.insert("iconName", service.iconName());
+    map.insert("serviceTypeId", service.serviceType());
+    return map;
+}
+
 
 /*!
  * \qmlproperty string AccountService::displayName
@@ -61,12 +176,22 @@
  * AccountService objects which work on the same online account will share the
  * same display name.
  */
+QString AccountService::displayName() const
+{
+    if (Q_UNLIKELY(accountService == 0)) return QString();
+    return accountService->account()->displayName();
+}
 
 /*!
  * \qmlproperty string AccountService::accountId
  * The account's numeric ID; note that all AccountService objects which work on
  * the same online account will have the same ID.
  */
+uint AccountService::accountId() const
+{
+    if (Q_UNLIKELY(accountService == 0)) return 0;
+    return accountService->account()->id();
+}
 
 /*!
  * \qmlproperty jsobject AccountService::settings
@@ -74,6 +199,17 @@
  * include the authentication settings, which are available from the
  * AccountService::authData property.
  */
+QVariantMap AccountService::settings() const
+{
+    QVariantMap map;
+    if (Q_UNLIKELY(accountService == 0)) return map;
+
+    foreach (const QString &key, accountService->allKeys()) {
+        if (key.startsWith("auth") || key == "enabled") continue;
+        map.insert(key, accountService->value(key));
+    }
+    return map;
+}
 
 /*!
  * \qmlproperty jsobject AccountService::authData
@@ -86,6 +222,18 @@
  * \li \c parameters is a dictionary of authentication parameters
  * \endlist
  */
+QVariantMap AccountService::authData() const
+{
+    QVariantMap map;
+    if (Q_UNLIKELY(accountService == 0)) return map;
+
+    Accounts::AuthData data = accountService->authData();
+    map.insert("method", data.method());
+    map.insert("mechanism", data.mechanism());
+    map.insert("credentialsId", data.credentialsId());
+    map.insert("parameters", data.parameters());
+    return map;
+}
 
 /*!
  * \qmlmethod void AccountService::authenticate(jsobject sessionData)
@@ -100,6 +248,34 @@
  *
  * \sa authenticated(), authenticationError()
  */
+void AccountService::authenticate(const QVariantMap &sessionData)
+{
+    DEBUG();
+    if (Q_UNLIKELY(accountService == 0)) {
+        QVariantMap error;
+        error.insert("code", SignOn::Error::WrongState);
+        error.insert("message", QLatin1String("Invalid AccountService"));
+        Q_EMIT authenticationError(error);
+        return;
+    }
+
+    Accounts::AuthData authData = accountService->authData();
+    if (identity == 0) {
+        identity =
+            SignOn::Identity::existingIdentity(authData.credentialsId(), this);
+    }
+    SignOn::AuthSession *authSession =
+        identity->createSession(authData.method());
+    QObject::connect(authSession, SIGNAL(response(const SignOn::SessionData&)),
+                     this,
+                     SLOT(onAuthSessionResponse(const SignOn::SessionData&)));
+    QObject::connect(authSession, SIGNAL(error(const SignOn::Error&)),
+                     this, SLOT(onAuthSessionError(const SignOn::Error&)));
+
+    QVariantMap allSessionData = mergeMaps(authData.parameters(),
+                                           sessionData);
+    authSession->process(allSessionData, authData.mechanism());
+}
 
 /*!
  * \qmlsignal AccountService::authenticated(jsobject reply)
@@ -119,3 +295,26 @@
  * \li \c message is a textual description of the error, not meant for the end-user
  * \endlist
  */
+
+
+void AccountService::classBegin()
+{
+}
+
+void AccountService::componentComplete()
+{
+    constructed = true;
+}
+
+void AccountService::onAuthSessionResponse(const SignOn::SessionData &sessionData)
+{
+    Q_EMIT authenticated(sessionData.toMap());
+}
+
+void AccountService::onAuthSessionError(const SignOn::Error &error)
+{
+    QVariantMap e;
+    e.insert("code", error.type());
+    e.insert("message", error.message());
+    Q_EMIT authenticationError(e);
+}

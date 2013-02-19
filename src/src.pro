@@ -8,15 +8,31 @@ API_URI = "Ubuntu.OnlineAccounts"
 DESTDIR = $$replace(API_URI, \\., /)
 
 CONFIG += \
+    link_pkgconfig \
     plugin \
     qt
 
 QT += qml
 
+# Error on undefined symbols
+QMAKE_LFLAGS += $$QMAKE_LFLAGS_NOUNDEF
+
+PKGCONFIG += \
+    accounts-qt5 \
+    libsignon-qt5
+
+DEFINES += \
+    DEBUG_ENABLED
+
 SOURCES += \
+    account-service-model.cpp \
+    account-service.cpp \
     plugin.cpp
 
 HEADERS += \
+    account-service-model.h \
+    account-service.h \
+    debug.h \
     plugin.h
 
 DEFINES += API_URI=\\\"$${API_URI}\\\"

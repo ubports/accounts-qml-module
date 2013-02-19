@@ -16,22 +16,19 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ONLINE_ACCOUNTS_PLUGIN_H
-#define ONLINE_ACCOUNTS_PLUGIN_H
+#ifndef ONLINE_ACCOUNTS_DEBUG_H
+#define ONLINE_ACCOUNTS_DEBUG_H
 
-#include <QQmlExtensionPlugin>
+#include <QDebug>
 
-namespace OnlineAccounts {
+#ifdef DEBUG_ENABLED
+    #define DEBUG() \
+        qDebug() << __FILE__ << __LINE__ << __func__
+    #define WARNING() \
+        qCritical() << __FILE__ << __LINE__ << __func__
+#else
+    #define DEBUG() while (0) qDebug()
+    #define WARNING() while (0) qDebug()
+#endif
 
-class Plugin: public QQmlExtensionPlugin
-{
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")
-
-public:
-    void registerTypes(const char *uri);
-};
-
-}; // namespace
-
-#endif // ONLINE_ACCOUNTS_PLUGIN_H
+#endif // ONLINE_ACCOUNTS_DEBUG_H

@@ -21,6 +21,8 @@
 
 #include <QTest>
 
+class QAbstractListModel;
+
 class PluginTest: public QObject
 {
     Q_OBJECT
@@ -31,6 +33,14 @@ public:
 private Q_SLOTS:
     void initTestCase();
     void testLoadPlugin();
+    void testModel();
+    void testModelSignals();
+    void testAccountService();
+    void testAuthentication();
+
+private:
+    void clearDb();
+    QVariant get(const QAbstractListModel *model, int row, QString roleName);
 };
 
 #endif // ONLINE_ACCOUNTS_TST_PLUGIN_H
