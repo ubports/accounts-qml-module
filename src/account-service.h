@@ -29,6 +29,7 @@ namespace Accounts {
 };
 
 namespace SignOn {
+    class AuthSession;
     class Error;
     class Identity;
     class SessionData;
@@ -87,6 +88,7 @@ private Q_SLOTS:
 private:
     QPointer<Accounts::AccountService> accountService;
     SignOn::Identity *identity;
+    QPointer<SignOn::AuthSession> authSession;
     bool constructed;
 };
 
