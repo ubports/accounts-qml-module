@@ -89,18 +89,17 @@ void AccountService::setObjectHandle(QObject *object)
     accountService = as;
     QObject::connect(accountService, SIGNAL(changed()),
                      this, SIGNAL(settingsChanged()));
+    QObject::connect(accountService, SIGNAL(enabled(bool)),
+                     this, SIGNAL(enabledChanged()));
     delete identity;
     identity = 0;
     Q_EMIT objectHandleChanged();
 
-    /* If the object handle has been changed on a constructed component, we
-     * also emit the changed signals for all other properties, to make sure
+    /* Emit the changed signals for all other properties, to make sure
      * that all bindings are updated. */
-    if (constructed) {
-        Q_EMIT enabledChanged();
-        Q_EMIT displayNameChanged();
-        Q_EMIT settingsChanged();
-    }
+    Q_EMIT enabledChanged();
+    Q_EMIT displayNameChanged();
+    Q_EMIT settingsChanged();
 }
 
 QObject *AccountService::objectHandle() const
@@ -264,13 +263,14 @@ void AccountService::authenticate(const QVariantMap &sessionData)
         identity =
             SignOn::Identity::existingIdentity(authData.credentialsId(), this);
     }
-    SignOn::AuthSession *authSession =
-        identity->createSession(authData.method());
-    QObject::connect(authSession, SIGNAL(response(const SignOn::SessionData&)),
-                     this,
-                     SLOT(onAuthSessionResponse(const SignOn::SessionData&)));
-    QObject::connect(authSession, SIGNAL(error(const SignOn::Error&)),
-                     this, SLOT(onAuthSessionError(const SignOn::Error&)));
+    if (authSession == 0) {
+        authSession = identity->createSession(authData.method());
+        QObject::connect(authSession, SIGNAL(response(const SignOn::SessionData&)),
+                         this,
+                         SLOT(onAuthSessionResponse(const SignOn::SessionData&)));
+        QObject::connect(authSession, SIGNAL(error(const SignOn::Error&)),
+                         this, SLOT(onAuthSessionError(const SignOn::Error&)));
+    }
 
     QVariantMap allSessionData = mergeMaps(authData.parameters(),
                                            sessionData);
