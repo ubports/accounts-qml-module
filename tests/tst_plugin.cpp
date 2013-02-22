@@ -115,6 +115,7 @@ void PluginTest::testModel()
     QVERIFY(model != 0);
 
     QCOMPARE(model->rowCount(), 3);
+    QCOMPARE(model->property("count").toInt(), 3);
 
     QCOMPARE(get(model, 0, "displayName").toString(), QString("BadAccount"));
     QCOMPARE(get(model, 0, "providerName").toString(), QString("Bad provider"));
@@ -124,6 +125,12 @@ void PluginTest::testModel()
     QCOMPARE(get(model, 2, "displayName").toString(), QString("CoolAccount"));
     QCOMPARE(get(model, 2, "providerName").toString(), QString("Cool provider"));
     QCOMPARE(get(model, 2, "accountId").toUInt(), account1->id());
+    QVariant value;
+    QVERIFY(QMetaObject::invokeMethod(model, "get",
+                                      Q_RETURN_ARG(QVariant, value),
+                                      Q_ARG(int, 2),
+                                      Q_ARG(QString, "providerName")));
+    QCOMPARE(value.toString(), QString("Cool provider"));
     QObject *accountService = get(model, 2, "accountService").value<QObject*>();
     QVERIFY(accountService != 0);
     QCOMPARE(accountService->metaObject()->className(), "Accounts::AccountService");
@@ -213,6 +220,7 @@ void PluginTest::testModelSignals()
     QVERIFY(model != 0);
 
     QCOMPARE(model->rowCount(), 1);
+    QCOMPARE(model->property("count").toInt(), 1);
 
     QCOMPARE(get(model, 0, "displayName").toString(), QString("CoolAccount"));
     QCOMPARE(get(model, 0, "providerName").toString(),
@@ -220,6 +228,7 @@ void PluginTest::testModelSignals()
     QCOMPARE(get(model, 0, "serviceName").toString(), QString("Cool Mail"));
 
     /* Enable the cool share service, and verify that it appears in the model */
+    QSignalSpy countChanged(model, SIGNAL(countChanged()));
     QSignalSpy rowsInserted(model,
                             SIGNAL(rowsInserted(const QModelIndex&,int,int)));
     account1->selectService(coolShare);
@@ -229,6 +238,7 @@ void PluginTest::testModelSignals()
 
     QCOMPARE(model->rowCount(), 2);
     QCOMPARE(rowsInserted.count(), 1);
+    QCOMPARE(countChanged.count(), 1);
     rowsInserted.clear();
 
     /* Disable the cool mail service, and verify that it gets removed */

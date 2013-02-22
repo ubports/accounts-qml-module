@@ -472,6 +472,11 @@ AccountServiceModel::AccountServiceModel(QObject *parent):
     d->roleNames[EnabledRole] = "enabled";
     d->roleNames[AccountServiceRole] = "accountService";
     d->roleNames[AccountIdRole] = "accountId";
+
+    QObject::connect(this, SIGNAL(rowsInserted(const QModelIndex &,int,int)),
+                     this, SIGNAL(countChanged()));
+    QObject::connect(this, SIGNAL(rowsRemoved(const QModelIndex &,int,int)),
+                     this, SIGNAL(countChanged()));
 }
 
 AccountServiceModel::~AccountServiceModel()
@@ -599,6 +604,17 @@ bool AccountServiceModel::includeDisabled() const
 {
     Q_D(const AccountServiceModel);
     return d->includeDisabled;
+}
+
+/*
+ * \qmlmethod variant AccountServiceModel::get(int row, string roleName)
+ *
+ * Returns the data at \a row for the role \a roleName.
+ */
+QVariant AccountServiceModel::get(int row, const QString &roleName) const
+{
+    int role = roleNames().key(roleName.toLatin1(), -1);
+    return data(index(row), role);
 }
 
 int AccountServiceModel::rowCount(const QModelIndex &parent) const

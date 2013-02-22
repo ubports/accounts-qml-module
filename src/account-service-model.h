@@ -31,6 +31,7 @@ class AccountServiceModel: public QAbstractListModel, public QQmlParserStatus
 {
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)
+    Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
     Q_PROPERTY(bool includeDisabled READ includeDisabled \
                WRITE setIncludeDisabled NOTIFY includeDisabledChanged)
     Q_PROPERTY(quint32 accountId READ accountId WRITE setAccountId \
@@ -70,6 +71,8 @@ public:
     void setService(const QString &serviceId);
     QString service() const;
 
+    Q_INVOKABLE QVariant get(int row, const QString &roleName) const;
+
     // reimplemented virtual methods
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
@@ -79,6 +82,7 @@ public:
     void componentComplete();
 
 Q_SIGNALS:
+    void countChanged();
     void includeDisabledChanged();
     void accountIdChanged();
     void providerChanged();
