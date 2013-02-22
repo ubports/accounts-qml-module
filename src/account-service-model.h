@@ -33,6 +33,8 @@ class AccountServiceModel: public QAbstractListModel, public QQmlParserStatus
     Q_INTERFACES(QQmlParserStatus)
     Q_PROPERTY(bool includeDisabled READ includeDisabled \
                WRITE setIncludeDisabled NOTIFY includeDisabledChanged)
+    Q_PROPERTY(quint32 accountId READ accountId WRITE setAccountId \
+               NOTIFY accountIdChanged)
     Q_PROPERTY(QString provider READ provider WRITE setProvider \
                NOTIFY providerChanged)
     Q_PROPERTY(QString serviceType READ serviceType WRITE setServiceType \
@@ -56,6 +58,9 @@ public:
     void setIncludeDisabled(bool includeDisabled);
     bool includeDisabled() const;
 
+    void setAccountId(quint32 accountId);
+    quint32 accountId() const;
+
     void setProvider(const QString &providerId);
     QString provider() const;
 
@@ -75,6 +80,7 @@ public:
 
 Q_SIGNALS:
     void includeDisabledChanged();
+    void accountIdChanged();
     void providerChanged();
     void serviceTypeChanged();
     void serviceChanged();

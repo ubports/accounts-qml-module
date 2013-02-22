@@ -75,10 +75,12 @@ private:
     QHash<int, QByteArray> roleNames;
     bool componentCompleted;
     bool updateQueued;
+    bool accountIdChanged;
     bool providerChanged;
     bool serviceTypeChanged;
     bool serviceChanged;
     bool includeDisabled;
+    Accounts::AccountId accountId;
     QString providerId;
     QString serviceTypeId;
     QString serviceId;
@@ -95,10 +97,12 @@ AccountServiceModelPrivate::AccountServiceModelPrivate(AccountServiceModel *mode
     q_ptr(model),
     componentCompleted(false),
     updateQueued(true),
+    accountIdChanged(false),
     providerChanged(false),
     serviceTypeChanged(false),
     serviceChanged(false),
     includeDisabled(false),
+    accountId(0),
     manager(0),
     sortFunction(sortByProviderAndDisplayName)
 {
@@ -123,6 +127,8 @@ AccountServices
 AccountServiceModelPrivate::listAccountServices(Accounts::AccountId accountId) const
 {
     AccountServices ret;
+
+    if (this->accountId != 0 && this->accountId != accountId) return ret;
 
     Accounts::Account *account = manager->account(accountId);
     if (Q_UNLIKELY(account == 0)) return ret;
@@ -298,6 +304,7 @@ void AccountServiceModelPrivate::update()
     sortItems();
     q->endInsertRows();
 
+    accountIdChanged = false;
     providerChanged = false;
     serviceTypeChanged = false;
     serviceChanged = false;
@@ -480,6 +487,28 @@ void AccountServiceModel::componentComplete()
     Q_D(AccountServiceModel);
     d->componentCompleted = true;
     d->update();
+}
+
+/*!
+ * \qmlproperty quint32 AccountServiceModel::accountId
+ * If set, the model will list only those accounts services available in the
+ * given account.
+ */
+void AccountServiceModel::setAccountId(quint32 accountId)
+{
+    Q_D(AccountServiceModel);
+
+    if (accountId == d->accountId) return;
+    d->accountId = accountId;
+    d->accountIdChanged = true;
+    d->queueUpdate();
+    Q_EMIT accountIdChanged();
+}
+
+quint32 AccountServiceModel::accountId() const
+{
+    Q_D(const AccountServiceModel);
+    return d->accountId;
 }
 
 /*!
