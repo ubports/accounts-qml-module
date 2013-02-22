@@ -8,6 +8,8 @@ Build-Depends: dbus-test-runner,
                libsignon-qt5-dev,
                pkg-config,
                qtdeclarative5-dev,
+               qtchooser,
+               qt5-qmake,
                xvfb,
 Standards-Version: 3.9.3
 Homepage: https://launchpad.net/accounts-qml-module
@@ -15,7 +17,7 @@ Homepage: https://launchpad.net/accounts-qml-module
 # just go ahead.  ~online-accounts will notice and sync up the code again.
 Vcs-Bzr: https://code.launchpad.net/~online-accounts/accounts-qml-module/trunk
 
-Package: accounts-qml-module
+Package: qtdeclarative5-accounts-plugin
 Architecture: any
 Depends: ${misc:Depends},
          ${shlibs:Depends},
