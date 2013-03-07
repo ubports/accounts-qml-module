@@ -21,6 +21,7 @@ Package: qtdeclarative5-accounts-plugin
 Architecture: any
 Depends: ${misc:Depends},
          ${shlibs:Depends},
+         qtdeclarative5-qtquick2-plugin,
 Description: Expose the Online Accounts API to QML applications
  This module provides access to the Online Accounts framework from QML
  applications.
