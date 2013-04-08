@@ -534,4 +534,246 @@ void PluginTest::testAuthentication()
     delete qmlObject;
 }
 
+void PluginTest::testManagerCreate()
+{
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Account { objectHandle: Manager.createAccount(\"cool\") }",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QVariantMap provider = qmlObject->property("provider").toMap();
+    QVERIFY(!provider.isEmpty());
+    QCOMPARE(provider["id"].toString(), QString("cool"));
+    QCOMPARE(provider["displayName"].toString(), QString("Cool provider"));
+    QCOMPARE(provider["iconName"].toString(), QString("general_myprovider"));
+
+    delete qmlObject;
+}
+
+void PluginTest::testManagerLoad()
+{
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Account *account1 = manager->createAccount("cool");
+    QVERIFY(account1 != 0);
+
+    account1->syncAndBlock();
+    QVERIFY(account1->id() != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("account1id", uint(account1->id()));
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Account { objectHandle: Manager.loadAccount(account1id) }",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QCOMPARE(qmlObject->property("accountId").toUInt(), account1->id());
+
+    QVariantMap provider = qmlObject->property("provider").toMap();
+    QVERIFY(!provider.isEmpty());
+    QCOMPARE(provider["id"].toString(), QString("cool"));
+    QCOMPARE(provider["displayName"].toString(), QString("Cool provider"));
+    QCOMPARE(provider["iconName"].toString(), QString("general_myprovider"));
+
+    delete manager;
+    delete qmlObject;
+}
+
+void PluginTest::testAccountInvalid()
+{
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Account {}",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QVERIFY(qmlObject->property("objectHandle").value<QObject*>() == 0);
+    QCOMPARE(qmlObject->property("enabled").toBool(), false);
+    QCOMPARE(qmlObject->property("displayName").toString(), QString());
+    QCOMPARE(qmlObject->property("accountId").toUInt(), uint(0));
+    QVariantMap provider = qmlObject->property("provider").toMap();
+    QVERIFY(provider.isEmpty());
+
+    qmlObject->setProperty("objectHandle", QVariant::fromValue<QObject*>(0));
+    QVERIFY(qmlObject->property("objectHandle").value<QObject*>() == 0);
+
+    bool ok;
+    ok = QMetaObject::invokeMethod(qmlObject, "updateDisplayName",
+                                   Q_ARG(QString, "dummy"));
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "updateEnabled",
+                                   Q_ARG(bool, "true"));
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "sync");
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "remove");
+    QVERIFY(ok);
+
+    delete qmlObject;
+}
+
+void PluginTest::testAccount()
+{
+    clearDb();
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Account { objectHandle: Manager.createAccount(\"cool\") }",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QObject *objectHandle =
+        qmlObject->property("objectHandle").value<QObject*>();
+    Account *account = qobject_cast<Account*>(objectHandle);
+    QVERIFY(account != 0);
+    QVERIFY(account->id() == 0);
+
+    QVariantMap provider = qmlObject->property("provider").toMap();
+    QVERIFY(!provider.isEmpty());
+    QCOMPARE(provider["id"].toString(), QString("cool"));
+
+    bool ok;
+    ok = QMetaObject::invokeMethod(qmlObject, "updateDisplayName",
+                                   Q_ARG(QString, "new name"));
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "updateEnabled",
+                                   Q_ARG(bool, "true"));
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "sync");
+    QVERIFY(ok);
+
+    QTest::qWait(50);
+
+    /* Check that the changes have been recorded */
+    QVERIFY(account->id() != 0);
+    AccountId accountId = account->id();
+    QCOMPARE(qmlObject->property("accountId").toUInt(), uint(account->id()));
+    QCOMPARE(qmlObject->property("displayName").toString(), QString("new name"));
+    QCOMPARE(qmlObject->property("enabled").toBool(), true);
+
+    objectHandle =
+        qmlObject->property("accountServiceHandle").value<QObject*>();
+    AccountService *accountService =
+        qobject_cast<AccountService*>(objectHandle);
+    QVERIFY(accountService != 0);
+
+    /* Set the same account instance on the account; just to improve coverage
+     * of branches. */
+    ok = qmlObject->setProperty("objectHandle",
+                                QVariant::fromValue<QObject*>(account));
+    QVERIFY(ok);
+
+    /* Delete the account */
+    ok = QMetaObject::invokeMethod(qmlObject, "remove");
+    QVERIFY(ok);
+
+    QTest::qWait(50);
+
+    /* Check that the account has effectively been removed */
+    Manager *manager = new Manager(this);
+    Account *account1 = manager->account(accountId);
+    QVERIFY(account1 == 0);
+
+    delete qmlObject;
+#if 0
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Service coolShare = manager->service("coolshare");
+    Service badMail = manager->service("badmail");
+    Service badShare = manager->service("badshare");
+    Account *account1 = manager->createAccount("cool");
+    QVERIFY(account1 != 0);
+
+    account1->setEnabled(true);
+    account1->setDisplayName("CoolAccount");
+    account1->selectService(coolMail);
+    account1->setEnabled(true);
+    account1->selectService(coolShare);
+    account1->setEnabled(false);
+    account1->syncAndBlock();
+
+    AccountService *accountService1 = new AccountService(account1, coolMail);
+    QVERIFY(accountService1 != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("accountService1", accountService1);
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountService { objectHandle: accountService1 }",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QCOMPARE(qmlObject->property("objectHandle").value<AccountService*>(),
+             accountService1);
+    QCOMPARE(qmlObject->property("enabled").toBool(), true);
+    QCOMPARE(qmlObject->property("displayName").toString(),
+             QString("CoolAccount"));
+    QCOMPARE(qmlObject->property("accountId").toUInt(), account1->id());
+
+    QVariantMap provider = qmlObject->property("provider").toMap();
+    QVERIFY(!provider.isEmpty());
+    QCOMPARE(provider["id"].toString(), QString("cool"));
+    QCOMPARE(provider["displayName"].toString(), QString("Cool provider"));
+    QCOMPARE(provider["iconName"].toString(), QString("general_myprovider"));
+
+    QVariantMap service = qmlObject->property("service").toMap();
+    QVERIFY(!service.isEmpty());
+    QCOMPARE(service["id"].toString(), QString("coolmail"));
+    QCOMPARE(service["displayName"].toString(), QString("Cool Mail"));
+    QCOMPARE(service["iconName"].toString(), QString("general_myservice"));
+    QCOMPARE(service["serviceTypeId"].toString(), QString("e-mail"));
+
+    QVariantMap settings = qmlObject->property("settings").toMap();
+    QVERIFY(!settings.isEmpty());
+    QCOMPARE(settings["color"].toString(), QString("green"));
+    QCOMPARE(settings["auto-explode-after"].toUInt(), uint(10));
+    QCOMPARE(settings.count(), 2);
+
+    QVariantMap authData = qmlObject->property("authData").toMap();
+    QVERIFY(!authData.isEmpty());
+    QCOMPARE(authData["method"].toString(), QString("oauth2"));
+    QCOMPARE(authData["mechanism"].toString(), QString("user_agent"));
+    QVariantMap parameters = authData["parameters"].toMap();
+    QVERIFY(!parameters.isEmpty());
+    QCOMPARE(parameters["host"].toString(), QString("coolmail.ex"));
+
+    /* Delete the account service, and check that the QML object survives */
+    delete accountService1;
+
+    QCOMPARE(qmlObject->property("objectHandle").value<AccountService*>(),
+             (AccountService*)0);
+    QCOMPARE(qmlObject->property("enabled").toBool(), false);
+    QCOMPARE(qmlObject->property("displayName").toString(), QString());
+    QCOMPARE(qmlObject->property("accountId").toUInt(), uint(0));
+
+    provider = qmlObject->property("provider").toMap();
+    QVERIFY(provider.isEmpty());
+
+    service = qmlObject->property("service").toMap();
+    QVERIFY(service.isEmpty());
+
+    settings = qmlObject->property("settings").toMap();
+    QVERIFY(settings.isEmpty());
+
+    authData = qmlObject->property("authData").toMap();
+    QVERIFY(authData.isEmpty());
+
+    delete manager;
+    delete qmlObject;
+#endif
+}
+
 QTEST_MAIN(PluginTest);

@@ -27,12 +27,16 @@ DEFINES += \
 SOURCES += \
     account-service-model.cpp \
     account-service.cpp \
+    account.cpp \
+    manager.cpp \
     plugin.cpp
 
 HEADERS += \
     account-service-model.h \
     account-service.h \
+    account.h \
     debug.h \
+    manager.h \
     plugin.h
 
 DEFINES += API_URI=\\\"$${API_URI}\\\"

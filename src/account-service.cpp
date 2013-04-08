@@ -51,11 +51,11 @@ static QVariantMap mergeMaps(const QVariantMap &map1,
  *
  * \brief Represents an instance of a service in an Online Accounts
  *
- * The AccountService element represent a service within an existing online account.
+ * The AccountService element represents a service within an existing online account.
  * It can be used to obtain an authentication token to use the service it refers to.
  *
  * Currently, an AccountService is valid only if its \a objectHandle property
- * is set to a value obtained from a AccountServiceModel.
+ * is set to a value obtained from an AccountServiceModel or an Account.
  *
  * See AccountServiceModel's documentation for usage examples.
  */
