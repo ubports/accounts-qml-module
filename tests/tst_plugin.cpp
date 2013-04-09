@@ -441,6 +441,115 @@ void PluginTest::testAccountService()
     authData = qmlObject->property("authData").toMap();
     QVERIFY(authData.isEmpty());
 
+    QVariantMap newSettings;
+    newSettings.insert("color", QString("red"));
+    bool ok;
+    ok = QMetaObject::invokeMethod(qmlObject, "updateSettings",
+                                   Q_ARG(QVariantMap, newSettings));
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "updateServiceEnabled",
+                                   Q_ARG(bool, true));
+    QVERIFY(ok);
+
+    delete manager;
+    delete qmlObject;
+}
+
+void PluginTest::testAccountServiceUpdate()
+{
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Account *account = manager->createAccount("cool");
+    QVERIFY(account != 0);
+
+    account->setEnabled(true);
+    account->setDisplayName("CoolAccount");
+    account->selectService(coolMail);
+    account->setEnabled(true);
+    account->syncAndBlock();
+
+    AccountService *accountService = new AccountService(account, coolMail);
+    QVERIFY(accountService != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("accountService", accountService);
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountService { objectHandle: accountService }",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QCOMPARE(qmlObject->property("objectHandle").value<AccountService*>(),
+             accountService);
+    QCOMPARE(qmlObject->property("autoSync").toBool(), true);
+    /* Set it to the same value, just to increase coverage */
+    QVERIFY(qmlObject->setProperty("autoSync", true));
+    QCOMPARE(qmlObject->property("autoSync").toBool(), true);
+
+    QVariantMap settings = qmlObject->property("settings").toMap();
+    QVERIFY(!settings.isEmpty());
+    QCOMPARE(settings["color"].toString(), QString("green"));
+    QCOMPARE(settings["auto-explode-after"].toUInt(), uint(10));
+    QCOMPARE(settings.count(), 2);
+
+    QSignalSpy settingsChanged(qmlObject, SIGNAL(settingsChanged()));
+
+    /* Update a couple of settings */
+    QVariantMap newSettings;
+    newSettings.insert("color", QString("red"));
+    newSettings.insert("verified", true);
+    QMetaObject::invokeMethod(qmlObject, "updateSettings",
+                              Q_ARG(QVariantMap, newSettings));
+    QTest::qWait(50);
+
+    QCOMPARE(settingsChanged.count(), 1);
+    settings = qmlObject->property("settings").toMap();
+    QCOMPARE(settings["color"].toString(), QString("red"));
+    QCOMPARE(settings["auto-explode-after"].toUInt(), uint(10));
+    QCOMPARE(settings["verified"].toBool(), true);
+    QCOMPARE(settings.count(), 3);
+
+    /* Disable the service */
+    QSignalSpy enabledChanged(qmlObject, SIGNAL(enabledChanged()));
+    QMetaObject::invokeMethod(qmlObject, "updateServiceEnabled",
+                              Q_ARG(bool, false));
+    QTest::qWait(50);
+    QCOMPARE(enabledChanged.count(), 1);
+    enabledChanged.clear();
+    QCOMPARE(qmlObject->property("enabled").toBool(), false);
+
+    /* Disable autoSync, and change something else */
+    qmlObject->setProperty("autoSync", false);
+    QCOMPARE(qmlObject->property("autoSync").toBool(), false);
+
+    settingsChanged.clear();
+    newSettings.clear();
+    newSettings.insert("verified", false);
+    newSettings.insert("color", QVariant());
+    QMetaObject::invokeMethod(qmlObject, "updateSettings",
+                              Q_ARG(QVariantMap, newSettings));
+    QTest::qWait(50);
+
+    /* Nothing should have been changed yet */
+    QCOMPARE(settingsChanged.count(), 0);
+    settings = qmlObject->property("settings").toMap();
+    QCOMPARE(settings["verified"].toBool(), true);
+
+    /* Manually store the settings */
+    account->sync();
+    QTest::qWait(50);
+
+    QCOMPARE(settingsChanged.count(), 1);
+    settingsChanged.clear();
+    settings = qmlObject->property("settings").toMap();
+    QCOMPARE(settings["verified"].toBool(), false);
+    QCOMPARE(settings["color"].toString(), QString("green"));
+
+    delete accountService;
     delete manager;
     delete qmlObject;
 }

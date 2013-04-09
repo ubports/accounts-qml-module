@@ -36,6 +36,7 @@ private Q_SLOTS:
     void testModel();
     void testModelSignals();
     void testAccountService();
+    void testAccountServiceUpdate();
     void testAuthentication();
     void testManagerCreate();
     void testManagerLoad();

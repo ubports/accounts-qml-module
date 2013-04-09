@@ -44,6 +44,27 @@ static QVariantMap mergeMaps(const QVariantMap &map1,
     return map;
 }
 
+void AccountService::ensureAccount()
+{
+    if (account == 0) {
+        account = accountService->account();
+        /* By default, the parent is the manager; but we don't want that. */
+        account->setParent(this);
+    }
+}
+
+void AccountService::syncIfDesired()
+{
+    if (m_autoSync) {
+        ensureAccount();
+        /* If needed, we could optimize this to call account->sync() when
+         * re-entering the main loop, in order to reduce the number or writes.
+         * But this would be better done in the Account class itself (and even
+         * better, in libaccounts-glib). */
+        account->sync();
+    }
+}
+
 /*!
  * \qmltype AccountService
  * \inqmlmodule Ubuntu.OnlineAccounts 0.1
@@ -62,13 +83,16 @@ static QVariantMap mergeMaps(const QVariantMap &map1,
 AccountService::AccountService(QObject *parent):
     QObject(parent),
     accountService(0),
+    account(0),
     identity(0),
-    constructed(false)
+    constructed(false),
+    m_autoSync(true)
 {
 }
 
 AccountService::~AccountService()
 {
+    delete account;
 }
 
 /*!
@@ -94,6 +118,8 @@ void AccountService::setObjectHandle(QObject *object)
                      this, SIGNAL(enabledChanged()));
     delete identity;
     identity = 0;
+    delete account;
+    account = 0;
     Q_EMIT objectHandleChanged();
 
     /* Emit the changed signals for all other properties, to make sure
@@ -234,6 +260,70 @@ QVariantMap AccountService::authData() const
     map.insert("parameters", data.parameters());
     return map;
 }
+
+/*!
+ * \qmlproperty bool AccountService::autoSync
+ * This property tells whether the AccountService should invoke the
+ * Account::sync() method whenever updateSettings() or updateServiceEnabled()
+ * are called.
+ * By default, this property is true.
+ */
+void AccountService::setAutoSync(bool autoSync)
+{
+    if (autoSync == m_autoSync) return;
+    m_autoSync = autoSync;
+    Q_EMIT autoSyncChanged();
+}
+
+bool AccountService::autoSync() const
+{
+    return m_autoSync;
+}
+
+/*!
+ * \qmlmethod void AccountService::updateServiceEnabled(bool enabled)
+ *
+ * Enables or disables the service within the account configuration.
+ * Since the \l enabled property is the combination of the global account's
+ * enabledness status and the specific service's status, its value might not
+ * change after this method is called.
+ *
+ * \sa enabled, serviceEnabled, autoSync
+ */
+void AccountService::updateServiceEnabled(bool enabled)
+{
+    if (Q_UNLIKELY(accountService == 0)) return;
+    ensureAccount();
+    account->selectService(accountService->service());
+    account->setEnabled(enabled);
+    syncIfDesired();
+}
+
+/*!
+ * \qmlmethod void AccountService::updateSettings(jsobject settings)
+ *
+ * Change some settings. Only the settings which are present in the \a settings
+ * dictionary will be changed; all others settings will not be affected.
+ * To remove a settings, set its value to null.
+ *
+ * \sa autoSync
+ */
+void AccountService::updateSettings(const QVariantMap &settings)
+{
+    if (Q_UNLIKELY(accountService == 0)) return;
+
+    QMapIterator<QString, QVariant> it(settings);
+    while (it.hasNext()) {
+        it.next();
+        if (it.value().isNull()) {
+            accountService->remove(it.key());
+        } else {
+            accountService->setValue(it.key(), it.value());
+        }
+    }
+    syncIfDesired();
+}
+
 
 /*!
  * \qmlmethod void AccountService::authenticate(jsobject sessionData)
