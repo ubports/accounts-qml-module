@@ -19,9 +19,6 @@ PKGCONFIG += \
 SOURCES += \
     tst_plugin.cpp
 
-HEADERS += \
-    tst_plugin.h
-
 INCLUDEPATH += \
     $$TOP_SRC_DIR/src
 

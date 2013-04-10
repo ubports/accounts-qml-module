@@ -16,8 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "tst_plugin.h"
-
 #include <Accounts/AccountService>
 #include <Accounts/Manager>
 #include <QAbstractListModel>
@@ -27,8 +25,34 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QSignalSpy>
+#include <QTest>
 
 using namespace Accounts;
+
+class PluginTest: public QObject
+{
+    Q_OBJECT
+
+public:
+    PluginTest();
+
+private Q_SLOTS:
+    void initTestCase();
+    void testLoadPlugin();
+    void testModel();
+    void testModelSignals();
+    void testAccountService();
+    void testAccountServiceUpdate();
+    void testAuthentication();
+    void testManagerCreate();
+    void testManagerLoad();
+    void testAccountInvalid();
+    void testAccount();
+
+private:
+    void clearDb();
+    QVariant get(const QAbstractListModel *model, int row, QString roleName);
+};
 
 PluginTest::PluginTest():
     QObject(0)
@@ -891,3 +915,4 @@ void PluginTest::testAccount()
 }
 
 QTEST_MAIN(PluginTest);
+#include "tst_plugin.moc"
