@@ -152,7 +152,7 @@ QObject *Account::accountServiceHandle() const
 }
 
 /*!
- * \qmlmethod void Account::updateDisplayName(const QString &displayName)
+ * \qmlmethod void Account::updateDisplayName(string displayName)
  *
  * Changes the display name of the account.
  *

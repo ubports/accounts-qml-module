@@ -329,14 +329,14 @@ void AccountService::updateSettings(const QVariantMap &settings)
  * \qmlmethod void AccountService::authenticate(jsobject sessionData)
  *
  * Perform the authentication on this account. The \a sessionData dictionary is
- * optional and if not given the value of \a authData.parameters will be used.
+ * optional and if not given the value of \l {authData}{authData::parameters} will be used.
  *
- * Each call to this method will cause either of authenticated() or
- * authenticationError() signals to be emitted at some time later. Note that
+ * Each call to this method will cause either of \l authenticated or
+ * \l authenticationError signals to be emitted at some time later. Note that
  * the authentication might involve interactions with the network or with the
  * end-user, so don't expect these signals to be emitted immediately.
  *
- * \sa authenticated(), authenticationError()
+ * \sa authenticated, authenticationError
  */
 void AccountService::authenticate(const QVariantMap &sessionData)
 {

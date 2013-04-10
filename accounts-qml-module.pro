@@ -17,3 +17,5 @@ EXCLUDES = \
 dist.commands = "tar -cvjf $${DISTNAME}.tar.bz2 $$EXCLUDES --transform='s,^,$$DISTNAME/,' *"
 dist.depends = distclean
 QMAKE_EXTRA_TARGETS += dist
+
+include(doc/doc.pri)

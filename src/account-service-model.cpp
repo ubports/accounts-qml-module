@@ -427,6 +427,7 @@ void AccountServiceModelPrivate::onAccountServiceEnabled(bool enabled)
  *         model: accounts
  *         delegate: Text { text: model.serviceName + " on " + model.displayName }
  *     }
+ * }
  * \endqml
  *
  * 3. List all Flickr accounts enabled for uploading:
@@ -448,8 +449,8 @@ void AccountServiceModelPrivate::onAccountServiceEnabled(bool enabled)
  *                 id: accountService
  *                 objectHandle: rect.model.accountService
  *
- *                 onAuthenticated: { console.log("Access token is " + reply.AccessToken }
- *                 onAuthenticationError: { console.log("Authentication failed, code " + error.code }
+ *                 onAuthenticated: { console.log("Access token is " + reply.AccessToken) }
+ *                 onAuthenticationError: { console.log("Authentication failed, code " + error.code) }
  *             }
  *
  *             MouseArea {
@@ -458,6 +459,7 @@ void AccountServiceModelPrivate::onAccountServiceEnabled(bool enabled)
  *             }
  *         }
  *     }
+ * }
  * \endqml
  */
 

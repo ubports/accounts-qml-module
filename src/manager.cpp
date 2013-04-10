@@ -60,7 +60,7 @@ QObject *Manager::loadAccount(uint accountId)
 }
 
 /*!
- * \qmlmethod object Manager::createAccount(const QString &providerName)
+ * \qmlmethod object Manager::createAccount(string providerName)
  *
  * Create a new account interfacing to the provider identified by \a
  * providerName.
