@@ -146,6 +146,23 @@ bool AccountService::enabled() const
 }
 
 /*!
+ * \qmlproperty bool AccountService::serviceEnabled
+ * This read-only property tells whether the service is enabled within the
+ * account. This property differs from the \l enabled property in that the
+ * \l enabled property also considers whether the account is enabled, while
+ * this one only reflects the status of the service. Applications shouldn't
+ * rely on the value on this property to decide whether to use the account or
+ * not.
+ *
+ * \sa enabled
+ */
+bool AccountService::serviceEnabled() const
+{
+    if (Q_UNLIKELY(accountService == 0)) return false;
+    return accountService->value("enabled").toBool();
+}
+
+/*!
  * \qmlproperty jsobject AccountService::provider
  * An immutable object representing the provider which provides the account.
  * The returned object will have at least these members:

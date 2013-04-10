@@ -389,6 +389,7 @@ void PluginTest::testAccountService()
     QCOMPARE(qmlObject->property("objectHandle").value<AccountService*>(),
              accountService1);
     QCOMPARE(qmlObject->property("enabled").toBool(), true);
+    QCOMPARE(qmlObject->property("serviceEnabled").toBool(), true);
     QCOMPARE(qmlObject->property("displayName").toString(),
              QString("CoolAccount"));
     QCOMPARE(qmlObject->property("accountId").toUInt(), account1->id());
@@ -426,6 +427,7 @@ void PluginTest::testAccountService()
     QCOMPARE(qmlObject->property("objectHandle").value<AccountService*>(),
              (AccountService*)0);
     QCOMPARE(qmlObject->property("enabled").toBool(), false);
+    QCOMPARE(qmlObject->property("serviceEnabled").toBool(), false);
     QCOMPARE(qmlObject->property("displayName").toString(), QString());
     QCOMPARE(qmlObject->property("accountId").toUInt(), uint(0));
 
@@ -507,6 +509,7 @@ void PluginTest::testAccountServiceUpdate()
     QTest::qWait(50);
 
     QCOMPARE(settingsChanged.count(), 1);
+    settingsChanged.clear();
     settings = qmlObject->property("settings").toMap();
     QCOMPARE(settings["color"].toString(), QString("red"));
     QCOMPARE(settings["auto-explode-after"].toUInt(), uint(10));
@@ -521,12 +524,14 @@ void PluginTest::testAccountServiceUpdate()
     QCOMPARE(enabledChanged.count(), 1);
     enabledChanged.clear();
     QCOMPARE(qmlObject->property("enabled").toBool(), false);
+    QCOMPARE(settingsChanged.count(), 1);
+    settingsChanged.clear();
+    QCOMPARE(qmlObject->property("serviceEnabled").toBool(), false);
 
     /* Disable autoSync, and change something else */
     qmlObject->setProperty("autoSync", false);
     QCOMPARE(qmlObject->property("autoSync").toBool(), false);
 
-    settingsChanged.clear();
     newSettings.clear();
     newSettings.insert("verified", false);
     newSettings.insert("color", QVariant());

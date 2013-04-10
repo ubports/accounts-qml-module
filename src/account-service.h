@@ -45,6 +45,7 @@ class AccountService: public QObject, public QQmlParserStatus
     Q_PROPERTY(QObject *objectHandle READ objectHandle \
                WRITE setObjectHandle NOTIFY objectHandleChanged)
     Q_PROPERTY(bool enabled READ enabled NOTIFY enabledChanged)
+    Q_PROPERTY(bool serviceEnabled READ serviceEnabled NOTIFY settingsChanged)
     Q_PROPERTY(QVariantMap provider READ provider NOTIFY objectHandleChanged)
     Q_PROPERTY(QVariantMap service READ service NOTIFY objectHandleChanged)
     Q_PROPERTY(QString displayName READ displayName NOTIFY displayNameChanged)
@@ -62,6 +63,7 @@ public:
     QObject *objectHandle() const;
 
     bool enabled() const;
+    bool serviceEnabled() const;
     QVariantMap provider() const;
     QVariantMap service() const;
     QString displayName() const;
