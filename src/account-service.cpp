@@ -169,7 +169,7 @@ bool AccountService::serviceEnabled() const
  * An immutable object representing the provider which provides the account.
  * The returned object will have at least these members:
  * \list
- * \li \c id is the unique identified for this provider
+ * \li \c id is the unique identifier for this provider
  * \li \c displayName
  * \li \c iconName
  * \endlist
@@ -318,10 +318,8 @@ void AccountService::setCredentials(QObject *credentials)
     m_credentials = credentials;
     if (m_credentials != 0) {
         credentialsIdProperty = QQmlProperty(m_credentials, "credentialsId");
-        bool ok;
-        ok = credentialsIdProperty.connectNotifySignal(this,
-                                                       SLOT(onCredentialsIdChanged()));
-        DEBUG() << "Connect succeeded:" << ok;
+        credentialsIdProperty.connectNotifySignal(this,
+                                                  SLOT(onCredentialsIdChanged()));
         onCredentialsIdChanged();
     } else {
         credentialsIdProperty = QQmlProperty();

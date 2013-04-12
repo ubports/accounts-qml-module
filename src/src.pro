@@ -30,7 +30,8 @@ SOURCES += \
     account.cpp \
     credentials.cpp \
     manager.cpp \
-    plugin.cpp
+    plugin.cpp \
+    provider-model.cpp
 
 HEADERS += \
     account-service-model.h \
@@ -39,7 +40,8 @@ HEADERS += \
     credentials.h \
     debug.h \
     manager.h \
-    plugin.h
+    plugin.h \
+    provider-model.h
 
 DEFINES += API_URI=\\\"$${API_URI}\\\"
 

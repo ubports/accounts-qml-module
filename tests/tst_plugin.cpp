@@ -41,6 +41,7 @@ private Q_SLOTS:
     void testLoadPlugin();
     void testModel();
     void testModelSignals();
+    void testProviderModel();
     void testAccountService();
     void testAccountServiceUpdate();
     void testAuthentication();
@@ -374,6 +375,44 @@ void PluginTest::testModelSignals()
     QCOMPARE(rowsInserted.at(0).at(2).toInt(), 3);
     QCOMPARE(rowsRemoved.count(), 0);
     rowsInserted.clear();
+
+    delete manager;
+    delete object;
+}
+
+void PluginTest::testProviderModel()
+{
+    /* Create some accounts */
+    Manager *manager = new Manager(this);
+    ProviderList providers = manager->providerList();
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "ProviderModel {}",
+                      QUrl());
+    QObject *object = component.create();
+    QVERIFY(object != 0);
+    QAbstractListModel *model = qobject_cast<QAbstractListModel*>(object);
+    QVERIFY(model != 0);
+
+    QCOMPARE(model->rowCount(), providers.count());
+    QCOMPARE(model->property("count").toInt(), providers.count());
+
+    for (int i = 0; i < providers.count(); i++) {
+        QCOMPARE(get(model, i, "displayName").toString(), providers[i].displayName());
+        QCOMPARE(get(model, i, "providerId").toString(), providers[i].name());
+        QCOMPARE(get(model, i, "iconName").toString(), providers[i].iconName());
+    }
+
+    QCOMPARE(get(model, 100, "iconName"), QVariant());
+
+    QVariant value;
+    QVERIFY(QMetaObject::invokeMethod(model, "get",
+                                      Q_RETURN_ARG(QVariant, value),
+                                      Q_ARG(int, 1),
+                                      Q_ARG(QString, "providerId")));
+    QCOMPARE(value.toString(), providers[1].name());
 
     delete manager;
     delete object;
