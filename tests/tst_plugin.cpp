@@ -48,6 +48,7 @@ private Q_SLOTS:
     void testManagerLoad();
     void testAccountInvalid();
     void testAccount();
+    void testCredentials();
 
 private:
     void clearDb();
@@ -823,6 +824,109 @@ void PluginTest::testAccount()
     Account *account1 = manager->account(accountId);
     QVERIFY(account1 == 0);
 
+    delete qmlObject;
+}
+
+void PluginTest::testCredentials()
+{
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Credentials {"
+                      " userName: \"Smart User\"\n"
+                      " secret: \"Valuable password\"\n"
+                      " storeSecret: true\n"
+                      " caption: \"Service One\"\n"
+                      " acl: [ \"Me\", \"You\" ]\n"
+                      " methods: {\n"
+                      "  \"oauth\": [ \"one\", \"two\" ],"
+                      "  \"sasl\": [ \"plain\" ]"
+                      " }\n"
+                      "}",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QCOMPARE(qmlObject->property("userName").toString(),
+             QString("Smart User"));
+    QCOMPARE(qmlObject->property("secret").toString(),
+             QString("Valuable password"));
+    QCOMPARE(qmlObject->property("storeSecret").toBool(), true);
+    QCOMPARE(qmlObject->property("caption").toString(),
+             QString("Service One"));
+    QStringList acl;
+    acl << "Me" << "You";
+    QCOMPARE(qmlObject->property("acl").toStringList(), acl);
+    QVariantMap methods;
+    methods.insert("oauth", QStringList() << "one" << "two");
+    methods.insert("sasl", QStringList() << "plain");
+    QCOMPARE(qmlObject->property("methods").toMap(), methods);
+    QCOMPARE(qmlObject->property("credentialsId").toUInt(), uint(0));
+
+    /* Set a few fields to the same values, just to increase coverage of
+     * branches */
+    qmlObject->setProperty("userName", "Smart User");
+    qmlObject->setProperty("secret", "Valuable password");
+    qmlObject->setProperty("storeSecret", true);
+    qmlObject->setProperty("caption", "Service One");
+    qmlObject->setProperty("methods", methods);
+    qmlObject->setProperty("acl", acl);
+
+    /* Remove the credentials; this won't do anything now */
+    bool ok;
+    ok = QMetaObject::invokeMethod(qmlObject, "remove");
+    QVERIFY(ok);
+
+    /* Store the credentials */
+    QSignalSpy synced(qmlObject, SIGNAL(synced()));
+    QSignalSpy credentialsIdChanged(qmlObject,
+                                    SIGNAL(credentialsIdChanged()));
+    ok = QMetaObject::invokeMethod(qmlObject, "sync");
+    QVERIFY(ok);
+
+    QTest::qWait(100);
+    QCOMPARE(synced.count(), 1);
+    synced.clear();
+    QCOMPARE(credentialsIdChanged.count(), 1);
+    credentialsIdChanged.clear();
+    uint credentialsId = qmlObject->property("credentialsId").toUInt();
+    QVERIFY(credentialsId != 0);
+
+    engine.rootContext()->setContextProperty("credsId", credentialsId);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Credentials { credentialsId: credsId }",
+                      QUrl());
+    QObject *qmlObject2 = component.create();
+    QVERIFY(qmlObject2 != 0);
+
+    QCOMPARE(qmlObject2->property("credentialsId").toUInt(), credentialsId);
+
+    /* After some time, we should get the synced() signal and all fields should
+     * be loaded at that point */
+    QSignalSpy synced2(qmlObject2, SIGNAL(synced()));
+
+    QTest::qWait(100);
+    QCOMPARE(synced2.count(), 1);
+    synced2.clear();
+    QCOMPARE(qmlObject2->property("userName").toString(),
+             QString("Smart User"));
+
+    /* Set the credentialsId to 0, everything should continue to work */
+    qmlObject2->setProperty("credentialsId", uint(0));
+    QTest::qWait(100);
+    QCOMPARE(qmlObject2->property("userName").toString(),
+             QString("Smart User"));
+
+    /* test removal of the credentials */
+    QSignalSpy removed(qmlObject, SIGNAL(removed()));
+    ok = QMetaObject::invokeMethod(qmlObject, "remove");
+    QVERIFY(ok);
+
+    QTest::qWait(100);
+    QCOMPARE(removed.count(), 1);
+    removed.clear();
+
+    delete qmlObject2;
     delete qmlObject;
 }
 

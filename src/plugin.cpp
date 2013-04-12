@@ -19,6 +19,7 @@
 #include "account-service-model.h"
 #include "account-service.h"
 #include "account.h"
+#include "credentials.h"
 #include "manager.h"
 #include "plugin.h"
 
@@ -41,5 +42,6 @@ void Plugin::registerTypes(const char *uri)
     qmlRegisterType<AccountServiceModel>(uri, 0, 1, "AccountServiceModel");
     qmlRegisterType<AccountService>(uri, 0, 1, "AccountService");
     qmlRegisterType<Account>(uri, 0, 1, "Account");
+    qmlRegisterType<Credentials>(uri, 0, 1, "Credentials");
     qmlRegisterSingletonType<Manager>(uri, 0, 1, "Manager", createManager);
 }

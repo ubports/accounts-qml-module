@@ -133,6 +133,62 @@ protected:
     QVariantMap m_data;
 };
 
+typedef QString MethodName;
+typedef QStringList MechanismsList;
+class IdentityInfoImpl;
+class IdentityInfo
+{
+public:
+    enum CredentialsType {
+        Other = 0,
+        Application = 1 << 0,
+        Web = 1 << 1,
+        Network = 1 << 2
+    };
+public:
+    IdentityInfo();
+    IdentityInfo(const IdentityInfo &other);
+    IdentityInfo &operator=(const IdentityInfo &other);
+    ~IdentityInfo();
+
+    void setId(const quint32 id);
+    quint32 id() const;
+
+    void setSecret(const QString &secret, const bool storeSecret = true);
+    QString secret() const;
+
+    bool isStoringSecret() const;
+    void setStoreSecret(const bool storeSecret);
+
+    void setUserName(const QString &userName);
+    const QString userName() const;
+
+    void setCaption(const QString &caption);
+    const QString caption() const;
+
+    void setRealms(const QStringList &realms);
+    QStringList realms() const;
+
+    void setOwner(const QString &ownerToken);
+    QString owner() const;
+
+    void setAccessControlList(const QStringList &accessControlList);
+    QStringList accessControlList() const;
+
+    void setMethod(const MethodName &method,
+                   const MechanismsList &mechanismsList);
+    void removeMethod(const MethodName &method);
+
+    void setType(CredentialsType type);
+    CredentialsType type() const;
+
+    QList<MethodName> methods() const;
+    MechanismsList mechanisms(const MethodName &method) const;
+
+private:
+    class IdentityInfoImpl *impl;
+};
+
 class Identity: public QObject
 {
     Q_OBJECT
@@ -142,13 +198,34 @@ protected:
     Identity(const quint32 id = 0, QObject *parent = 0);
 
 public:
+    static Identity *newIdentity(const IdentityInfo &info = IdentityInfo(),
+                                 QObject *parent = 0);
     static Identity *existingIdentity(const quint32 id, QObject *parent = 0);
     virtual ~Identity();
 
     AuthSessionP createSession(const QString &methodName);
+    void storeCredentials(const IdentityInfo &info = IdentityInfo());
+    void remove();
+    void queryInfo();
+
+Q_SIGNALS:
+    void error(const SignOn::Error &err);
+    void credentialsStored(const quint32 id);
+    void info(const SignOn::IdentityInfo &info);
+    void removed();
+
+private Q_SLOTS:
+    void emitCredentialsStored();
+    void emitInfo();
+    void emitRemoved();
 
 private:
+    static quint32 lastId;
     quint32 m_id;
+    IdentityInfo m_info;
+    QTimer m_storeTimer;
+    QTimer m_infoTimer;
+    QTimer m_removeTimer;
 };
 
 class AuthSession: public QObject
@@ -182,6 +259,7 @@ private:
 }; // namespace
 
 Q_DECLARE_METATYPE(SignOn::Error)
+Q_DECLARE_METATYPE(SignOn::IdentityInfo)
 Q_DECLARE_METATYPE(SignOn::SessionData)
 
 #endif // MOCK_SIGNON_H
