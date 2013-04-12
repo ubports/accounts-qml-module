@@ -20,12 +20,19 @@
 #define ONLINE_ACCOUNTS_MANAGER_H
 
 #include <QObject>
+#include <QSharedPointer>
 
 namespace Accounts {
     class Manager;
 };
 
 namespace OnlineAccounts {
+
+class SharedManager
+{
+public:
+    static QSharedPointer<Accounts::Manager> instance();
+};
 
 class Manager: public QObject
 {
@@ -39,7 +46,7 @@ public:
     Q_INVOKABLE QObject *createAccount(const QString &providerName);
 
 private:
-    Accounts::Manager *manager;
+    QSharedPointer<Accounts::Manager> manager;
 };
 
 }; // namespace

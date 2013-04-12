@@ -21,8 +21,21 @@
 #include "debug.h"
 
 #include <Accounts/Manager>
+#include <QWeakPointer>
 
 using namespace OnlineAccounts;
+
+static QWeakPointer<Accounts::Manager> sharedManager;
+
+QSharedPointer<Accounts::Manager> SharedManager::instance()
+{
+    QSharedPointer<Accounts::Manager> manager = sharedManager.toStrongRef();
+    if (manager.isNull()) {
+        manager = QSharedPointer<Accounts::Manager>(new Accounts::Manager);
+        sharedManager = manager;
+    }
+    return manager;
+}
 
 /*!
  * \qmltype Manager
@@ -36,13 +49,12 @@ using namespace OnlineAccounts;
  */
 Manager::Manager(QObject *parent):
     QObject(parent),
-    manager(new Accounts::Manager)
+    manager(SharedManager::instance())
 {
 }
 
 Manager::~Manager()
 {
-    delete manager;
 }
 
 /*!
