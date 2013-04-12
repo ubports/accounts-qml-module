@@ -236,6 +236,12 @@ void Credentials::remove()
  * Emitted when the changes have been stored into the permanent secrets storage.
  */
 
+/*!
+ * \qmlsignal Credentials::removed()
+ *
+ * Emitted when the credentials have been deleted from the secrets storage.
+ */
+
 void Credentials::ensureIdentity()
 {
     if (identity == 0) {

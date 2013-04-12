@@ -263,6 +263,8 @@ QVariantMap AccountService::settings() const
  * \li \c mechanism is the authentication mechanism (a sub-specification of the
  *     method)
  * \li \c parameters is a dictionary of authentication parameters
+ * \li \c credentialsId is the numeric identified of the credentials in the
+ * secrets storage. See the \l Credentials element for more info.
  * \endlist
  */
 QVariantMap AccountService::authData() const
