@@ -49,6 +49,7 @@ private Q_SLOTS:
     void testAccountInvalid();
     void testAccount();
     void testCredentials();
+    void testAccountServiceCredentials();
 
 private:
     void clearDb();
@@ -865,6 +866,7 @@ void PluginTest::testCredentials()
 
     /* Set a few fields to the same values, just to increase coverage of
      * branches */
+    qmlObject->setProperty("credentialsId", uint(0));
     qmlObject->setProperty("userName", "Smart User");
     qmlObject->setProperty("secret", "Valuable password");
     qmlObject->setProperty("storeSecret", true);
@@ -928,6 +930,84 @@ void PluginTest::testCredentials()
 
     delete qmlObject2;
     delete qmlObject;
+}
+
+void PluginTest::testAccountServiceCredentials()
+{
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Account *account = manager->createAccount("cool");
+    QVERIFY(account != 0);
+
+    account->setEnabled(true);
+    account->setDisplayName("CoolAccount");
+    account->selectService(coolMail);
+    account->setEnabled(true);
+    account->syncAndBlock();
+
+    AccountService *accountService = new AccountService(account, coolMail);
+    QVERIFY(accountService != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("accountService", accountService);
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountService {\n"
+                      " id: account\n"
+                      " objectHandle: accountService\n"
+                      " credentials: Credentials {\n"
+                      "  objectName: \"creds\"\n"
+                      "  userName: \"Happy user\"\n"
+                      "  caption: account.provider.displayName\n"
+                      " }\n"
+                      "}",
+                      QUrl());
+    QObject *qmlAccount = component.create();
+    QVERIFY(qmlAccount != 0);
+
+    QObject *qmlCredentials = qmlAccount->findChild<QObject*>("creds");
+    QVERIFY(qmlCredentials != 0);
+
+    /* Sanity check */
+    QCOMPARE(qmlAccount->property("credentials").value<QObject*>(),
+             qmlCredentials);
+    QCOMPARE(qmlCredentials->property("userName").toString(),
+             QString("Happy user"));
+    QCOMPARE(qmlCredentials->property("caption").toString(),
+             QString("Cool provider"));
+
+    /* Store the credentials */
+    QSignalSpy synced(qmlCredentials, SIGNAL(synced()));
+    bool ok;
+    ok = QMetaObject::invokeMethod(qmlCredentials, "sync");
+    QVERIFY(ok);
+
+    /* Wait for the operation to finish, and verify it succeeded */
+    QTest::qWait(100);
+    QCOMPARE(synced.count(), 1);
+    synced.clear();
+    uint credentialsId = qmlCredentials->property("credentialsId").toUInt();
+    QVERIFY(credentialsId != 0);
+
+    /* Verify that autoSync is true (it should always be true by default */
+    QCOMPARE(qmlAccount->property("autoSync").toBool(), true);
+
+    /* And check that the credentialsId have now been written to the account*/
+    QVariantMap authData = qmlAccount->property("authData").toMap();
+    QVERIFY(!authData.isEmpty());
+    QCOMPARE(authData["credentialsId"].toUInt(), credentialsId);
+
+    /* Just to increase coverage */
+    qmlAccount->setProperty("credentials",
+                            QVariant::fromValue<QObject*>(qmlCredentials));
+    qmlAccount->setProperty("credentials", QVariant::fromValue<QObject*>(0));
+    QVERIFY(qmlAccount->property("credentials").value<QObject*>() == 0);
+
+    delete qmlAccount;
+    delete accountService;
 }
 
 QTEST_MAIN(PluginTest);

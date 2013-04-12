@@ -22,6 +22,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QQmlParserStatus>
+#include <QQmlProperty>
 #include <QVariantMap>
 
 namespace Accounts {
@@ -54,6 +55,8 @@ class AccountService: public QObject, public QQmlParserStatus
     Q_PROPERTY(QVariantMap authData READ authData NOTIFY settingsChanged)
     Q_PROPERTY(bool autoSync READ autoSync WRITE setAutoSync \
                NOTIFY autoSyncChanged)
+    Q_PROPERTY(QObject *credentials READ credentials WRITE setCredentials \
+               NOTIFY credentialsChanged)
 
 public:
     AccountService(QObject *parent = 0);
@@ -74,6 +77,9 @@ public:
     void setAutoSync(bool autoSync);
     bool autoSync() const;
 
+    void setCredentials(QObject *credentials);
+    QObject *credentials() const;
+
     Q_INVOKABLE void authenticate(const QVariantMap &sessionData);
     Q_INVOKABLE void updateServiceEnabled(bool enabled);
     Q_INVOKABLE void updateSettings(const QVariantMap &settings);
@@ -88,6 +94,7 @@ Q_SIGNALS:
     void displayNameChanged();
     void settingsChanged();
     void autoSyncChanged();
+    void credentialsChanged();
 
     void authenticated(const QVariantMap &reply);
     void authenticationError(const QVariantMap &error);
@@ -95,6 +102,7 @@ Q_SIGNALS:
 private Q_SLOTS:
     void onAuthSessionResponse(const SignOn::SessionData &sessionData);
     void onAuthSessionError(const SignOn::Error &error);
+    void onCredentialsIdChanged();
 
 private:
     void ensureAccount();
@@ -105,6 +113,8 @@ private:
     Accounts::Account *account;
     SignOn::Identity *identity;
     QPointer<SignOn::AuthSession> authSession;
+    QPointer<QObject> m_credentials;
+    QQmlProperty credentialsIdProperty;
     bool constructed;
     bool m_autoSync;
 };

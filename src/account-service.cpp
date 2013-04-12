@@ -18,6 +18,7 @@
 
 
 #include "account-service.h"
+#include "credentials.h"
 #include "debug.h"
 
 #include <Accounts/AccountService>
@@ -85,6 +86,7 @@ AccountService::AccountService(QObject *parent):
     accountService(0),
     account(0),
     identity(0),
+    m_credentials(0),
     constructed(false),
     m_autoSync(true)
 {
@@ -300,6 +302,39 @@ bool AccountService::autoSync() const
 }
 
 /*!
+ * \qmlproperty Credentials AccountService::credentials
+ * The credentials used by this account service. This property is meant to be
+ * used only when creating or editing the account, and serves to bind a
+ * credentials record to the account: when the value of the \l
+ * Credentials::credentialsId changes, an update of \l
+ * {authData}{authData.credentialsId} will be queued (and immediately executed
+ * if \l autoSync is \c true).
+ * By default, reading this property returns a null object.
+ */
+void AccountService::setCredentials(QObject *credentials)
+{
+    if (credentials == m_credentials) return;
+
+    m_credentials = credentials;
+    if (m_credentials != 0) {
+        credentialsIdProperty = QQmlProperty(m_credentials, "credentialsId");
+        bool ok;
+        ok = credentialsIdProperty.connectNotifySignal(this,
+                                                       SLOT(onCredentialsIdChanged()));
+        DEBUG() << "Connect succeeded:" << ok;
+        onCredentialsIdChanged();
+    } else {
+        credentialsIdProperty = QQmlProperty();
+    }
+    Q_EMIT credentialsChanged();
+}
+
+QObject *AccountService::credentials() const
+{
+    return m_credentials;
+}
+
+/*!
  * \qmlmethod void AccountService::updateServiceEnabled(bool enabled)
  *
  * Enables or disables the service within the account configuration.
@@ -427,4 +462,13 @@ void AccountService::onAuthSessionError(const SignOn::Error &error)
     e.insert("code", error.type());
     e.insert("message", error.message());
     Q_EMIT authenticationError(e);
+}
+
+void AccountService::onCredentialsIdChanged()
+{
+    if (accountService) {
+        QVariant value = credentialsIdProperty.read();
+        accountService->setValue("CredentialsId", value);
+        syncIfDesired();
+    }
 }
