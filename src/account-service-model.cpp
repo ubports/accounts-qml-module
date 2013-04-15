@@ -273,7 +273,14 @@ void AccountServiceModelPrivate::update()
     allItems.clear();
     q->endRemoveRows();
 
-    if (serviceTypeChanged || manager == 0) {
+    if (serviceTypeChanged) {
+        delete manager;
+        manager = 0;
+    }
+
+    /* Instantiate a manager, if needed. If the account property is set to a
+     * valid account, we don't need a manager object. */
+    if (manager == 0 && account == 0) {
         delete manager;
         if (serviceTypeId.isEmpty()) {
             manager = new Accounts::Manager(this);
@@ -683,10 +690,9 @@ QVariant AccountServiceModel::data(const QModelIndex &index, int role) const
         ret = accountService->account()->displayName();
         break;
     case ProviderNameRole:
-        // TODO: use the new account->provider() method
         {
-            QString providerName = accountService->account()->providerName();
-            Accounts::Provider provider = d->manager->provider(providerName);
+            Accounts::Provider provider =
+                accountService->account()->provider();
             ret = provider.displayName();
         }
         break;
