@@ -19,8 +19,10 @@
 #include "account-service-model.h"
 #include "debug.h"
 
+#include <Accounts/Account>
 #include <Accounts/AccountService>
 #include <Accounts/Manager>
+#include <QPointer>
 
 using namespace OnlineAccounts;
 
@@ -56,9 +58,9 @@ public:
     ~AccountServiceModelPrivate();
 
     void queueUpdate();
-    AccountServices listAccountServices(Accounts::AccountId accountId) const;
+    AccountServices listAccountServices(Accounts::Account *account) const;
 
-    void addServicesFromAccount(Accounts::AccountId id);
+    void addServicesFromAccount(Accounts::Account *account);
     void watchItems(const AccountServices &items);
     void addItems(const AccountServices &added);
     void removeItems(const AccountServices &removed);
@@ -76,11 +78,13 @@ private:
     bool componentCompleted;
     bool updateQueued;
     bool accountIdChanged;
+    bool accountChanged;
     bool providerChanged;
     bool serviceTypeChanged;
     bool serviceChanged;
     bool includeDisabled;
     Accounts::AccountId accountId;
+    QPointer<Accounts::Account> account;
     QString providerId;
     QString serviceTypeId;
     QString serviceId;
@@ -98,6 +102,7 @@ AccountServiceModelPrivate::AccountServiceModelPrivate(AccountServiceModel *mode
     componentCompleted(false),
     updateQueued(true),
     accountIdChanged(false),
+    accountChanged(false),
     providerChanged(false),
     serviceTypeChanged(false),
     serviceChanged(false),
@@ -124,13 +129,10 @@ void AccountServiceModelPrivate::queueUpdate()
 }
 
 AccountServices
-AccountServiceModelPrivate::listAccountServices(Accounts::AccountId accountId) const
+AccountServiceModelPrivate::listAccountServices(Accounts::Account *account) const
 {
     AccountServices ret;
 
-    if (this->accountId != 0 && this->accountId != accountId) return ret;
-
-    Accounts::Account *account = manager->account(accountId);
     if (Q_UNLIKELY(account == 0)) return ret;
 
     if (!providerId.isEmpty() && account->providerName() != providerId)
@@ -145,9 +147,9 @@ AccountServiceModelPrivate::listAccountServices(Accounts::AccountId accountId) c
 }
 
 void
-AccountServiceModelPrivate::addServicesFromAccount(Accounts::AccountId id)
+AccountServiceModelPrivate::addServicesFromAccount(Accounts::Account *account)
 {
-    AccountServices accountServices = listAccountServices(id);
+    AccountServices accountServices = listAccountServices(account);
     watchItems(accountServices);
 
     AccountServices newModelItems;
@@ -284,8 +286,20 @@ void AccountServiceModelPrivate::update()
                          this, SLOT(onAccountRemoved(Accounts::AccountId)));
     }
 
-    foreach (Accounts::AccountId accountId, manager->accountList()) {
-        AccountServices accountServices = listAccountServices(accountId);
+    QList<Accounts::Account *> accounts;
+    if (account != 0) {
+        accounts.append(account);
+    } else if (accountId != 0) {
+        Accounts::Account *account = manager->account(accountId);
+        accounts.append(account);
+    } else {
+        foreach (Accounts::AccountId accountId, manager->accountList()) {
+            Accounts::Account *account = manager->account(accountId);
+            accounts.append(account);
+        }
+    }
+    foreach (Accounts::Account *account, accounts) {
+        AccountServices accountServices = listAccountServices(account);
         watchItems(accountServices);
     }
 
@@ -313,7 +327,8 @@ void AccountServiceModelPrivate::update()
 void AccountServiceModelPrivate::onAccountCreated(Accounts::AccountId id)
 {
     DEBUG() << id;
-    addServicesFromAccount(id);
+    Accounts::Account *account = manager->account(id);
+    addServicesFromAccount(account);
 }
 
 void AccountServiceModelPrivate::onAccountRemoved(Accounts::AccountId id)
@@ -516,6 +531,29 @@ quint32 AccountServiceModel::accountId() const
 {
     Q_D(const AccountServiceModel);
     return d->accountId;
+}
+
+/*!
+ * \qmlproperty Account AccountServiceModel::account
+ * If set, the model will list only those accounts services available in the
+ * given account.
+ */
+void AccountServiceModel::setAccount(QObject *object)
+{
+    Q_D(AccountServiceModel);
+
+    Accounts::Account *account = qobject_cast<Accounts::Account*>(object);
+    if (account == d->account) return;
+    d->account = account;
+    d->accountChanged = true;
+    d->queueUpdate();
+    Q_EMIT accountChanged();
+}
+
+QObject *AccountServiceModel::account() const
+{
+    Q_D(const AccountServiceModel);
+    return d->account;
 }
 
 /*!

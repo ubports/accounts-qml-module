@@ -180,6 +180,17 @@ void PluginTest::testModel()
     QCOMPARE(get(model, 1, "accountId").toUInt(), account1->id());
     model->setProperty("accountId", 0);
 
+    /* Test the account filter */
+    model->setProperty("account", QVariant::fromValue<QObject*>(account2));
+    QCOMPARE(model->property("account").value<QObject*>(), account2);
+    QTest::qWait(10);
+    QCOMPARE(model->rowCount(), 2);
+    QCOMPARE(get(model, 0, "accountId").toUInt(), account2->id());
+    QCOMPARE(get(model, 1, "accountId").toUInt(), account2->id());
+    model->setProperty("account", QVariant::fromValue<QObject*>(account2));
+    QCOMPARE(model->property("account").value<QObject*>(), account2);
+    model->setProperty("account", QVariant::fromValue<QObject*>(0));
+
     /* Test the provider filter */
     model->setProperty("provider", QString("bad"));
     QCOMPARE(model->property("provider").toString(), QString("bad"));
