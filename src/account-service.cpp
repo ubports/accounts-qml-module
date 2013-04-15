@@ -285,8 +285,8 @@ QVariantMap AccountService::authData() const
 /*!
  * \qmlproperty bool AccountService::autoSync
  * This property tells whether the AccountService should invoke the
- * Account::sync() method whenever updateSettings() or updateServiceEnabled()
- * are called.
+ * Account::sync() method whenever updateSettings(), updateDisplayName() or
+ * updateServiceEnabled() are called.
  * By default, this property is true.
  */
 void AccountService::setAutoSync(bool autoSync)
