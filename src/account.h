@@ -19,6 +19,7 @@
 #ifndef ONLINE_ACCOUNTS_ACCOUNT_H
 #define ONLINE_ACCOUNTS_ACCOUNT_H
 
+#include <QList>
 #include <QObject>
 #include <QPointer>
 #include <QVariantMap>
@@ -26,6 +27,10 @@
 namespace Accounts {
     class Account;
     class AccountService;
+};
+
+namespace SignOn {
+    class Identity;
 };
 
 namespace OnlineAccounts {
@@ -58,7 +63,7 @@ public:
     Q_INVOKABLE void updateDisplayName(const QString &displayName);
     Q_INVOKABLE void updateEnabled(bool enabled);
     Q_INVOKABLE void sync();
-    Q_INVOKABLE void remove();
+    Q_INVOKABLE void remove(bool removeCredentials = true);
 
 Q_SIGNALS:
     void objectHandleChanged();
@@ -68,9 +73,14 @@ Q_SIGNALS:
     void synced();
     void removed();
 
+private Q_SLOTS:
+    void onRemoved();
+    void onIdentityRemoved();
+
 private:
     QPointer<Accounts::Account> account;
     QPointer<Accounts::AccountService> accountService;
+    QList<SignOn::Identity *> identities;
 };
 
 }; // namespace

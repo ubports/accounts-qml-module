@@ -23,6 +23,7 @@
 #include <Accounts/Account>
 #include <Accounts/AccountService>
 #include <Accounts/Provider>
+#include <SignOn/Identity>
 
 using namespace OnlineAccounts;
 
@@ -65,7 +66,7 @@ void Account::setObjectHandle(QObject *object)
     QObject::connect(account, SIGNAL(displayNameChanged(const QString &)),
                      this, SIGNAL(displayNameChanged()));
     QObject::connect(account, SIGNAL(synced()), this, SIGNAL(synced()));
-    QObject::connect(account, SIGNAL(removed()), this, SIGNAL(removed()));
+    QObject::connect(account, SIGNAL(removed()), this, SLOT(onRemoved()));
 
     /* Setup an AccountService object to monitor the settings of the global
      * account. */
@@ -192,11 +193,43 @@ void Account::sync()
 /*!
  * \qmlmethod void Account::remove()
  *
- * Deletes the account from the permanent storage.
+ * Deletes the account from the permanent storage. This method accepts an
+ * optional boolean value, which tells whether the credentials associated with
+ * the account should also be removed (if not given, this parameter's value is
+ * assumed to be \c true).
  */
-void Account::remove()
+void Account::remove(bool removeCredentials)
 {
     if (Q_UNLIKELY(account == 0)) return;
+
+    if (removeCredentials) {
+        /* Get all the IDs of the credentials used by this account */
+        QList<uint> credentialIds;
+        account->selectService();
+        uint credentialsId = account->value("CredentialsId").toUInt();
+        if (credentialsId != 0)
+            credentialIds.append(credentialsId);
+        Q_FOREACH (const Accounts::Service &service, account->services()) {
+            account->selectService(service);
+            credentialsId = account->value("CredentialsId").toUInt();
+            if (credentialsId != 0)
+                credentialIds.append(credentialsId);
+        }
+
+        /* Instantiate an Identity object for each of them */
+        Q_FOREACH (uint credentialsId, credentialIds) {
+            SignOn::Identity *identity =
+                SignOn::Identity::existingIdentity(credentialsId, this);
+            QObject::connect(identity, SIGNAL(removed()),
+                             this, SLOT(onIdentityRemoved()));
+            /* Since we don't do any error handling in case the removal of the
+             * identity failed, we connect to the same slot. */
+            QObject::connect(identity, SIGNAL(error(const SignOn::Error&)),
+                             this, SLOT(onIdentityRemoved()));
+            identities.append(identity);
+        }
+    }
+
     account->remove();
     account->sync();
 }
@@ -206,3 +239,28 @@ void Account::remove()
  *
  * Emitted when the account changes have been stored into the permanent storage.
  */
+
+void Account::onRemoved()
+{
+    Q_FOREACH (SignOn::Identity *identity, identities) {
+        /* Remove the associated credentials */
+        identity->remove();
+    }
+
+    /* Don't emit the removed() signal until all associated Identity objects
+     * have been removed */
+    if (identities.isEmpty()) {
+        Q_EMIT removed();
+    }
+}
+
+void Account::onIdentityRemoved()
+{
+    SignOn::Identity *identity = qobject_cast<SignOn::Identity *>(sender());
+    identities.removeAll(identity);
+    identity->deleteLater();
+
+    if (identities.isEmpty()) {
+        Q_EMIT removed();
+    }
+}

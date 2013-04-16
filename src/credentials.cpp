@@ -67,8 +67,10 @@ void Credentials::setCredentialsId(quint32 credentialsId)
     delete identity;
     if (credentialsId != 0) {
         identity = SignOn::Identity::existingIdentity(credentialsId, this);
-        setupIdentity();
-        identity->queryInfo();
+        if (identity != 0) {
+            setupIdentity();
+            identity->queryInfo();
+        }
     } else {
         identity = 0; /* We'll instantiate it if/when needed */
     }

@@ -50,6 +50,8 @@ private Q_SLOTS:
     void testAccountInvalid();
     void testAccount();
     void testCredentials();
+    void testAccountCredentialsRemoval_data();
+    void testAccountCredentialsRemoval();
     void testAccountServiceCredentials();
 
 private:
@@ -980,6 +982,124 @@ void PluginTest::testCredentials()
 
     delete qmlObject2;
     delete qmlObject;
+}
+
+void PluginTest::testAccountCredentialsRemoval_data()
+{
+    QTest::addColumn<bool>("removeCredentials");
+    QTest::addColumn<QString>("expectedUserName");
+    QTest::newRow("With credentials removal") << true << QString();
+    QTest::newRow("Without credentials removal") << false << QString("Happy user");
+}
+
+void PluginTest::testAccountCredentialsRemoval()
+{
+    QFETCH(bool, removeCredentials);
+    QFETCH(QString, expectedUserName);
+
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Account *account = manager->createAccount("cool");
+    QVERIFY(account != 0);
+
+    account->setEnabled(true);
+    account->setDisplayName("CoolAccount");
+    account->selectService(coolMail);
+    account->setEnabled(true);
+    account->syncAndBlock();
+
+    quint32 accountId = account->id();
+    QVERIFY(accountId != 0);
+
+    AccountService *globalService = new AccountService(account, Service());
+    QVERIFY(globalService != 0);
+    AccountService *mailService = new AccountService(account, coolMail);
+    QVERIFY(mailService != 0);
+
+    QList<AccountService*> services;
+    services.append(globalService);
+    services.append(mailService);
+
+    QQmlEngine engine;
+    Q_FOREACH (AccountService *accountService, services) {
+        engine.rootContext()->setContextProperty("accountService", accountService);
+        QQmlComponent component(&engine);
+        component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                          "AccountService {\n"
+                          " id: account\n"
+                          " objectHandle: accountService\n"
+                          " credentials: Credentials {\n"
+                          "  objectName: \"creds\"\n"
+                          "  userName: \"Happy user\"\n"
+                          "  caption: account.provider.displayName\n"
+                          " }\n"
+                          "}",
+                          QUrl());
+        QObject *qmlAccount = component.create();
+        QVERIFY(qmlAccount != 0);
+
+        QObject *qmlCredentials = qmlAccount->findChild<QObject*>("creds");
+        QVERIFY(qmlCredentials != 0);
+
+        /* Store the credentials */
+        bool ok;
+        ok = QMetaObject::invokeMethod(qmlCredentials, "sync");
+        QVERIFY(ok);
+        QTest::qWait(100);
+    }
+
+    /* And check that the credentialsId have now been written to the account*/
+    uint globalCredentialsId = globalService->value("CredentialsId").toUInt();
+    QVERIFY(globalCredentialsId != 0);
+    uint mailCredentialsId = mailService->value("CredentialsId").toUInt();
+    QVERIFY(mailCredentialsId != 0);
+    QVERIFY(mailCredentialsId != globalCredentialsId);
+
+    delete globalService;
+    delete mailService;
+    delete manager;
+
+    QQmlComponent accountComponent(&engine);
+    engine.rootContext()->setContextProperty("aid", accountId);
+    accountComponent.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                             "Account { objectHandle: Manager.loadAccount(aid) }",
+                             QUrl());
+    QObject *qmlAccount = accountComponent.create();
+    QVERIFY(qmlAccount != 0);
+
+    /* test removal of the credentials */
+    QSignalSpy removed(qmlAccount, SIGNAL(removed()));
+    bool ok = QMetaObject::invokeMethod(qmlAccount, "remove",
+                                        Q_ARG(bool, removeCredentials));
+    QVERIFY(ok);
+
+    QTest::qWait(200);
+    QCOMPARE(removed.count(), 1);
+    removed.clear();
+
+    delete qmlAccount;
+
+    /* Verify that the credentials have actually been removed if
+     * removeCredentials was true, or retained if it was false. */
+    QList<uint> credentials;
+    credentials.append(globalCredentialsId);
+    credentials.append(mailCredentialsId);
+
+    Q_FOREACH (uint credentialsId, credentials) {
+        engine.rootContext()->setContextProperty("credsId", credentialsId);
+        QQmlComponent component(&engine);
+        component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                          "Credentials { credentialsId: credsId }",
+                          QUrl());
+        QObject *qmlCredentials = component.create();
+        QVERIFY(qmlCredentials != 0);
+
+        QTest::qWait(100);
+        QCOMPARE(qmlCredentials->property("userName").toString(), expectedUserName);
+    }
 }
 
 void PluginTest::testAccountServiceCredentials()
