@@ -194,15 +194,18 @@ void Account::sync()
  * \qmlmethod void Account::remove()
  *
  * Deletes the account from the permanent storage. This method accepts an
- * optional boolean value, which tells whether the credentials associated with
- * the account should also be removed (if not given, this parameter's value is
- * assumed to be \c true).
+ * optional parameter, which tells whether the credentials associated with
+ * the account should also be removed:
+ * \list
+ * \li \c Account.RemoveAccountOnly
+ * \li \c Account.RemoveCredentials - the default
+ * \endlist
  */
-void Account::remove(bool removeCredentials)
+void Account::remove(RemovalOptions options)
 {
     if (Q_UNLIKELY(account == 0)) return;
 
-    if (removeCredentials) {
+    if (options & RemoveCredentials) {
         /* Get all the IDs of the credentials used by this account */
         QList<uint> credentialIds;
         account->selectService();

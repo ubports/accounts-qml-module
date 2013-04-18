@@ -48,6 +48,13 @@ class Account: public QObject
                NOTIFY objectHandleChanged)
 
 public:
+    enum RemovalOption {
+        RemoveAccountOnly = 0x0,
+        RemoveCredentials = 0x1,
+    };
+    Q_DECLARE_FLAGS(RemovalOptions, RemovalOption)
+    Q_FLAGS(RemovalOption RemovalOptions)
+
     Account(QObject *parent = 0);
     ~Account();
 
@@ -63,7 +70,7 @@ public:
     Q_INVOKABLE void updateDisplayName(const QString &displayName);
     Q_INVOKABLE void updateEnabled(bool enabled);
     Q_INVOKABLE void sync();
-    Q_INVOKABLE void remove(bool removeCredentials = true);
+    Q_INVOKABLE void remove(RemovalOptions options = RemoveCredentials);
 
 Q_SIGNALS:
     void objectHandleChanged();
@@ -84,5 +91,7 @@ private:
 };
 
 }; // namespace
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(OnlineAccounts::Account::RemovalOptions)
 
 #endif // ONLINE_ACCOUNTS_ACCOUNT_H

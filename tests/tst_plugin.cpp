@@ -1065,15 +1065,24 @@ void PluginTest::testAccountCredentialsRemoval()
     QQmlComponent accountComponent(&engine);
     engine.rootContext()->setContextProperty("aid", accountId);
     accountComponent.setData("import Ubuntu.OnlineAccounts 0.1\n"
-                             "Account { objectHandle: Manager.loadAccount(aid) }",
+                             "Account {\n"
+                             "  objectHandle: Manager.loadAccount(aid)\n"
+                             "  function removeAccount1() {\n"
+                             "    remove(Account.RemoveAccountOnly)\n"
+                             "  }\n"
+                             "  function removeAccount2() {\n"
+                             "    remove(Account.RemoveCredentials)\n"
+                             "  }\n"
+                             "}",
                              QUrl());
     QObject *qmlAccount = accountComponent.create();
     QVERIFY(qmlAccount != 0);
 
     /* test removal of the credentials */
     QSignalSpy removed(qmlAccount, SIGNAL(removed()));
-    bool ok = QMetaObject::invokeMethod(qmlAccount, "remove",
-                                        Q_ARG(bool, removeCredentials));
+    const char *removeFunction = removeCredentials ?
+        "removeAccount2" : "removeAccount1";
+    bool ok = QMetaObject::invokeMethod(qmlAccount, removeFunction);
     QVERIFY(ok);
 
     QTest::qWait(200);
