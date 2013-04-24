@@ -18,6 +18,7 @@
 
 
 #include "account-service.h"
+#include "credentials.h"
 #include "debug.h"
 
 #include <Accounts/AccountService>
@@ -44,6 +45,27 @@ static QVariantMap mergeMaps(const QVariantMap &map1,
     return map;
 }
 
+void AccountService::ensureAccount()
+{
+    if (account == 0) {
+        account = accountService->account();
+        /* By default, the parent is the manager; but we don't want that. */
+        account->setParent(this);
+    }
+}
+
+void AccountService::syncIfDesired()
+{
+    if (m_autoSync) {
+        ensureAccount();
+        /* If needed, we could optimize this to call account->sync() when
+         * re-entering the main loop, in order to reduce the number or writes.
+         * But this would be better done in the Account class itself (and even
+         * better, in libaccounts-glib). */
+        account->sync();
+    }
+}
+
 /*!
  * \qmltype AccountService
  * \inqmlmodule Ubuntu.OnlineAccounts 0.1
@@ -51,24 +73,28 @@ static QVariantMap mergeMaps(const QVariantMap &map1,
  *
  * \brief Represents an instance of a service in an Online Accounts
  *
- * The AccountService element represent a service within an existing online account.
+ * The AccountService element represents a service within an existing online account.
  * It can be used to obtain an authentication token to use the service it refers to.
  *
  * Currently, an AccountService is valid only if its \a objectHandle property
- * is set to a value obtained from a AccountServiceModel.
+ * is set to a value obtained from an AccountServiceModel or an Account.
  *
  * See AccountServiceModel's documentation for usage examples.
  */
 AccountService::AccountService(QObject *parent):
     QObject(parent),
     accountService(0),
+    account(0),
     identity(0),
-    constructed(false)
+    m_credentials(0),
+    constructed(false),
+    m_autoSync(true)
 {
 }
 
 AccountService::~AccountService()
 {
+    delete account;
 }
 
 /*!
@@ -94,6 +120,8 @@ void AccountService::setObjectHandle(QObject *object)
                      this, SIGNAL(enabledChanged()));
     delete identity;
     identity = 0;
+    delete account;
+    account = 0;
     Q_EMIT objectHandleChanged();
 
     /* Emit the changed signals for all other properties, to make sure
@@ -120,11 +148,28 @@ bool AccountService::enabled() const
 }
 
 /*!
+ * \qmlproperty bool AccountService::serviceEnabled
+ * This read-only property tells whether the service is enabled within the
+ * account. This property differs from the \l enabled property in that the
+ * \l enabled property also considers whether the account is enabled, while
+ * this one only reflects the status of the service. Applications shouldn't
+ * rely on the value on this property to decide whether to use the account or
+ * not.
+ *
+ * \sa enabled
+ */
+bool AccountService::serviceEnabled() const
+{
+    if (Q_UNLIKELY(accountService == 0)) return false;
+    return accountService->value("enabled").toBool();
+}
+
+/*!
  * \qmlproperty jsobject AccountService::provider
  * An immutable object representing the provider which provides the account.
  * The returned object will have at least these members:
  * \list
- * \li \c id is the unique identified for this provider
+ * \li \c id is the unique identifier for this provider
  * \li \c displayName
  * \li \c iconName
  * \endlist
@@ -220,6 +265,8 @@ QVariantMap AccountService::settings() const
  * \li \c mechanism is the authentication mechanism (a sub-specification of the
  *     method)
  * \li \c parameters is a dictionary of authentication parameters
+ * \li \c credentialsId is the numeric identified of the credentials in the
+ * secrets storage. See the \l Credentials element for more info.
  * \endlist
  */
 QVariantMap AccountService::authData() const
@@ -236,17 +283,112 @@ QVariantMap AccountService::authData() const
 }
 
 /*!
+ * \qmlproperty bool AccountService::autoSync
+ * This property tells whether the AccountService should invoke the
+ * Account::sync() method whenever updateSettings(), updateDisplayName() or
+ * updateServiceEnabled() are called.
+ * By default, this property is true.
+ */
+void AccountService::setAutoSync(bool autoSync)
+{
+    if (autoSync == m_autoSync) return;
+    m_autoSync = autoSync;
+    Q_EMIT autoSyncChanged();
+}
+
+bool AccountService::autoSync() const
+{
+    return m_autoSync;
+}
+
+/*!
+ * \qmlproperty Credentials AccountService::credentials
+ * The credentials used by this account service. This property is meant to be
+ * used only when creating or editing the account, and serves to bind a
+ * credentials record to the account: when the value of the \l
+ * Credentials::credentialsId changes, an update of \l
+ * {authData}{authData.credentialsId} will be queued (and immediately executed
+ * if \l autoSync is \c true).
+ * By default, reading this property returns a null object.
+ */
+void AccountService::setCredentials(QObject *credentials)
+{
+    if (credentials == m_credentials) return;
+
+    m_credentials = credentials;
+    if (m_credentials != 0) {
+        credentialsIdProperty = QQmlProperty(m_credentials, "credentialsId");
+        credentialsIdProperty.connectNotifySignal(this,
+                                                  SLOT(onCredentialsIdChanged()));
+        onCredentialsIdChanged();
+    } else {
+        credentialsIdProperty = QQmlProperty();
+    }
+    Q_EMIT credentialsChanged();
+}
+
+QObject *AccountService::credentials() const
+{
+    return m_credentials;
+}
+
+/*!
+ * \qmlmethod void AccountService::updateServiceEnabled(bool enabled)
+ *
+ * Enables or disables the service within the account configuration.
+ * Since the \l enabled property is the combination of the global account's
+ * enabledness status and the specific service's status, its value might not
+ * change after this method is called.
+ *
+ * \sa enabled, serviceEnabled, autoSync
+ */
+void AccountService::updateServiceEnabled(bool enabled)
+{
+    if (Q_UNLIKELY(accountService == 0)) return;
+    ensureAccount();
+    account->selectService(accountService->service());
+    account->setEnabled(enabled);
+    syncIfDesired();
+}
+
+/*!
+ * \qmlmethod void AccountService::updateSettings(jsobject settings)
+ *
+ * Change some settings. Only the settings which are present in the \a settings
+ * dictionary will be changed; all others settings will not be affected.
+ * To remove a settings, set its value to null.
+ *
+ * \sa autoSync
+ */
+void AccountService::updateSettings(const QVariantMap &settings)
+{
+    if (Q_UNLIKELY(accountService == 0)) return;
+
+    QMapIterator<QString, QVariant> it(settings);
+    while (it.hasNext()) {
+        it.next();
+        if (it.value().isNull()) {
+            accountService->remove(it.key());
+        } else {
+            accountService->setValue(it.key(), it.value());
+        }
+    }
+    syncIfDesired();
+}
+
+
+/*!
  * \qmlmethod void AccountService::authenticate(jsobject sessionData)
  *
  * Perform the authentication on this account. The \a sessionData dictionary is
- * optional and if not given the value of \a authData.parameters will be used.
+ * optional and if not given the value of \l {authData}{authData::parameters} will be used.
  *
- * Each call to this method will cause either of authenticated() or
- * authenticationError() signals to be emitted at some time later. Note that
+ * Each call to this method will cause either of \l authenticated or
+ * \l authenticationError signals to be emitted at some time later. Note that
  * the authentication might involve interactions with the network or with the
  * end-user, so don't expect these signals to be emitted immediately.
  *
- * \sa authenticated(), authenticationError()
+ * \sa authenticated, authenticationError
  */
 void AccountService::authenticate(const QVariantMap &sessionData)
 {
@@ -318,4 +460,13 @@ void AccountService::onAuthSessionError(const SignOn::Error &error)
     e.insert("code", error.type());
     e.insert("message", error.message());
     Q_EMIT authenticationError(e);
+}
+
+void AccountService::onCredentialsIdChanged()
+{
+    if (accountService) {
+        QVariant value = credentialsIdProperty.read();
+        accountService->setValue("CredentialsId", value);
+        syncIfDesired();
+    }
 }

@@ -18,16 +18,32 @@
 
 #include "account-service-model.h"
 #include "account-service.h"
+#include "account.h"
+#include "credentials.h"
+#include "manager.h"
 #include "plugin.h"
+#include "provider-model.h"
 
 #include <QDebug>
 #include <QQmlComponent>
 
 using namespace OnlineAccounts;
 
+static QObject *createManager(QQmlEngine *engine, QJSEngine *scriptEngine)
+{
+    Q_UNUSED(engine);
+    Q_UNUSED(scriptEngine);
+
+    return new Manager();
+}
+
 void Plugin::registerTypes(const char *uri)
 {
     qDebug() << Q_FUNC_INFO << uri;
     qmlRegisterType<AccountServiceModel>(uri, 0, 1, "AccountServiceModel");
     qmlRegisterType<AccountService>(uri, 0, 1, "AccountService");
+    qmlRegisterType<Account>(uri, 0, 1, "Account");
+    qmlRegisterType<Credentials>(uri, 0, 1, "Credentials");
+    qmlRegisterType<ProviderModel>(uri, 0, 1, "ProviderModel");
+    qmlRegisterSingletonType<Manager>(uri, 0, 1, "Manager", createManager);
 }

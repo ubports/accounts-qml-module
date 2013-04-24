@@ -16,31 +16,39 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ONLINE_ACCOUNTS_TST_PLUGIN_H
-#define ONLINE_ACCOUNTS_TST_PLUGIN_H
+#ifndef ONLINE_ACCOUNTS_MANAGER_H
+#define ONLINE_ACCOUNTS_MANAGER_H
 
-#include <QTest>
+#include <QObject>
+#include <QSharedPointer>
 
-class QAbstractListModel;
+namespace Accounts {
+    class Manager;
+};
 
-class PluginTest: public QObject
+namespace OnlineAccounts {
+
+class SharedManager
+{
+public:
+    static QSharedPointer<Accounts::Manager> instance();
+};
+
+class Manager: public QObject
 {
     Q_OBJECT
 
 public:
-    PluginTest();
+    Manager(QObject *parent = 0);
+    ~Manager();
 
-private Q_SLOTS:
-    void initTestCase();
-    void testLoadPlugin();
-    void testModel();
-    void testModelSignals();
-    void testAccountService();
-    void testAuthentication();
+    Q_INVOKABLE QObject *loadAccount(uint accountId);
+    Q_INVOKABLE QObject *createAccount(const QString &providerName);
 
 private:
-    void clearDb();
-    QVariant get(const QAbstractListModel *model, int row, QString roleName);
+    QSharedPointer<Accounts::Manager> manager;
 };
 
-#endif // ONLINE_ACCOUNTS_TST_PLUGIN_H
+}; // namespace
+
+#endif // ONLINE_ACCOUNTS_MANAGER_H

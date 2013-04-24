@@ -19,9 +19,6 @@ PKGCONFIG += \
 SOURCES += \
     tst_plugin.cpp
 
-HEADERS += \
-    tst_plugin.h
-
 INCLUDEPATH += \
     $$TOP_SRC_DIR/src
 
@@ -32,6 +29,6 @@ DEFINES += \
     SERVICE_TYPES_DIR=\\\"$$DATA_PATH\\\" \
     PROVIDERS_DIR=\\\"$$DATA_PATH\\\"
 
-check.commands = "LD_LIBRARY_PATH=mock:${LD_LIBRARY_PATH} xvfb-run -a dbus-test-runner -t ./$${TARGET}"
+check.commands = "LD_LIBRARY_PATH=mock:${LD_LIBRARY_PATH} xvfb-run -a dbus-test-runner -m 120 -t ./$${TARGET}"
 check.depends = $${TARGET}
 QMAKE_EXTRA_TARGETS += check

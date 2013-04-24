@@ -16,8 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "tst_plugin.h"
-
 #include <Accounts/AccountService>
 #include <Accounts/Manager>
 #include <QAbstractListModel>
@@ -27,8 +25,39 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QSignalSpy>
+#include <QTest>
 
 using namespace Accounts;
+
+class PluginTest: public QObject
+{
+    Q_OBJECT
+
+public:
+    PluginTest();
+
+private Q_SLOTS:
+    void initTestCase();
+    void testLoadPlugin();
+    void testModel();
+    void testModelSignals();
+    void testProviderModel();
+    void testAccountService();
+    void testAccountServiceUpdate();
+    void testAuthentication();
+    void testManagerCreate();
+    void testManagerLoad();
+    void testAccountInvalid();
+    void testAccount();
+    void testCredentials();
+    void testAccountCredentialsRemoval_data();
+    void testAccountCredentialsRemoval();
+    void testAccountServiceCredentials();
+
+private:
+    void clearDb();
+    QVariant get(const QAbstractListModel *model, int row, QString roleName);
+};
 
 PluginTest::PluginTest():
     QObject(0)
@@ -152,6 +181,17 @@ void PluginTest::testModel()
     QCOMPARE(get(model, 0, "accountId").toUInt(), account1->id());
     QCOMPARE(get(model, 1, "accountId").toUInt(), account1->id());
     model->setProperty("accountId", 0);
+
+    /* Test the account filter */
+    model->setProperty("account", QVariant::fromValue<QObject*>(account2));
+    QCOMPARE(model->property("account").value<QObject*>(), account2);
+    QTest::qWait(10);
+    QCOMPARE(model->rowCount(), 2);
+    QCOMPARE(get(model, 0, "accountId").toUInt(), account2->id());
+    QCOMPARE(get(model, 1, "accountId").toUInt(), account2->id());
+    model->setProperty("account", QVariant::fromValue<QObject*>(account2));
+    QCOMPARE(model->property("account").value<QObject*>(), account2);
+    model->setProperty("account", QVariant::fromValue<QObject*>(0));
 
     /* Test the provider filter */
     model->setProperty("provider", QString("bad"));
@@ -353,6 +393,44 @@ void PluginTest::testModelSignals()
     delete object;
 }
 
+void PluginTest::testProviderModel()
+{
+    /* Create some accounts */
+    Manager *manager = new Manager(this);
+    ProviderList providers = manager->providerList();
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "ProviderModel {}",
+                      QUrl());
+    QObject *object = component.create();
+    QVERIFY(object != 0);
+    QAbstractListModel *model = qobject_cast<QAbstractListModel*>(object);
+    QVERIFY(model != 0);
+
+    QCOMPARE(model->rowCount(), providers.count());
+    QCOMPARE(model->property("count").toInt(), providers.count());
+
+    for (int i = 0; i < providers.count(); i++) {
+        QCOMPARE(get(model, i, "displayName").toString(), providers[i].displayName());
+        QCOMPARE(get(model, i, "providerId").toString(), providers[i].name());
+        QCOMPARE(get(model, i, "iconName").toString(), providers[i].iconName());
+    }
+
+    QCOMPARE(get(model, 100, "iconName"), QVariant());
+
+    QVariant value;
+    QVERIFY(QMetaObject::invokeMethod(model, "get",
+                                      Q_RETURN_ARG(QVariant, value),
+                                      Q_ARG(int, 1),
+                                      Q_ARG(QString, "providerId")));
+    QCOMPARE(value.toString(), providers[1].name());
+
+    delete manager;
+    delete object;
+}
+
 void PluginTest::testAccountService()
 {
     clearDb();
@@ -389,6 +467,7 @@ void PluginTest::testAccountService()
     QCOMPARE(qmlObject->property("objectHandle").value<AccountService*>(),
              accountService1);
     QCOMPARE(qmlObject->property("enabled").toBool(), true);
+    QCOMPARE(qmlObject->property("serviceEnabled").toBool(), true);
     QCOMPARE(qmlObject->property("displayName").toString(),
              QString("CoolAccount"));
     QCOMPARE(qmlObject->property("accountId").toUInt(), account1->id());
@@ -426,6 +505,7 @@ void PluginTest::testAccountService()
     QCOMPARE(qmlObject->property("objectHandle").value<AccountService*>(),
              (AccountService*)0);
     QCOMPARE(qmlObject->property("enabled").toBool(), false);
+    QCOMPARE(qmlObject->property("serviceEnabled").toBool(), false);
     QCOMPARE(qmlObject->property("displayName").toString(), QString());
     QCOMPARE(qmlObject->property("accountId").toUInt(), uint(0));
 
@@ -441,6 +521,118 @@ void PluginTest::testAccountService()
     authData = qmlObject->property("authData").toMap();
     QVERIFY(authData.isEmpty());
 
+    QVariantMap newSettings;
+    newSettings.insert("color", QString("red"));
+    bool ok;
+    ok = QMetaObject::invokeMethod(qmlObject, "updateSettings",
+                                   Q_ARG(QVariantMap, newSettings));
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "updateServiceEnabled",
+                                   Q_ARG(bool, true));
+    QVERIFY(ok);
+
+    delete manager;
+    delete qmlObject;
+}
+
+void PluginTest::testAccountServiceUpdate()
+{
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Account *account = manager->createAccount("cool");
+    QVERIFY(account != 0);
+
+    account->setEnabled(true);
+    account->setDisplayName("CoolAccount");
+    account->selectService(coolMail);
+    account->setEnabled(true);
+    account->syncAndBlock();
+
+    AccountService *accountService = new AccountService(account, coolMail);
+    QVERIFY(accountService != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("accountService", accountService);
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountService { objectHandle: accountService }",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QCOMPARE(qmlObject->property("objectHandle").value<AccountService*>(),
+             accountService);
+    QCOMPARE(qmlObject->property("autoSync").toBool(), true);
+    /* Set it to the same value, just to increase coverage */
+    QVERIFY(qmlObject->setProperty("autoSync", true));
+    QCOMPARE(qmlObject->property("autoSync").toBool(), true);
+
+    QVariantMap settings = qmlObject->property("settings").toMap();
+    QVERIFY(!settings.isEmpty());
+    QCOMPARE(settings["color"].toString(), QString("green"));
+    QCOMPARE(settings["auto-explode-after"].toUInt(), uint(10));
+    QCOMPARE(settings.count(), 2);
+
+    QSignalSpy settingsChanged(qmlObject, SIGNAL(settingsChanged()));
+
+    /* Update a couple of settings */
+    QVariantMap newSettings;
+    newSettings.insert("color", QString("red"));
+    newSettings.insert("verified", true);
+    QMetaObject::invokeMethod(qmlObject, "updateSettings",
+                              Q_ARG(QVariantMap, newSettings));
+    QTest::qWait(50);
+
+    QCOMPARE(settingsChanged.count(), 1);
+    settingsChanged.clear();
+    settings = qmlObject->property("settings").toMap();
+    QCOMPARE(settings["color"].toString(), QString("red"));
+    QCOMPARE(settings["auto-explode-after"].toUInt(), uint(10));
+    QCOMPARE(settings["verified"].toBool(), true);
+    QCOMPARE(settings.count(), 3);
+
+    /* Disable the service */
+    QSignalSpy enabledChanged(qmlObject, SIGNAL(enabledChanged()));
+    QMetaObject::invokeMethod(qmlObject, "updateServiceEnabled",
+                              Q_ARG(bool, false));
+    QTest::qWait(50);
+    QCOMPARE(enabledChanged.count(), 1);
+    enabledChanged.clear();
+    QCOMPARE(qmlObject->property("enabled").toBool(), false);
+    QCOMPARE(settingsChanged.count(), 1);
+    settingsChanged.clear();
+    QCOMPARE(qmlObject->property("serviceEnabled").toBool(), false);
+
+    /* Disable autoSync, and change something else */
+    qmlObject->setProperty("autoSync", false);
+    QCOMPARE(qmlObject->property("autoSync").toBool(), false);
+
+    newSettings.clear();
+    newSettings.insert("verified", false);
+    newSettings.insert("color", QVariant());
+    QMetaObject::invokeMethod(qmlObject, "updateSettings",
+                              Q_ARG(QVariantMap, newSettings));
+    QTest::qWait(50);
+
+    /* Nothing should have been changed yet */
+    QCOMPARE(settingsChanged.count(), 0);
+    settings = qmlObject->property("settings").toMap();
+    QCOMPARE(settings["verified"].toBool(), true);
+
+    /* Manually store the settings */
+    account->sync();
+    QTest::qWait(50);
+
+    QCOMPARE(settingsChanged.count(), 1);
+    settingsChanged.clear();
+    settings = qmlObject->property("settings").toMap();
+    QCOMPARE(settings["verified"].toBool(), false);
+    QCOMPARE(settings["color"].toString(), QString("green"));
+
+    delete accountService;
     delete manager;
     delete qmlObject;
 }
@@ -534,4 +726,468 @@ void PluginTest::testAuthentication()
     delete qmlObject;
 }
 
+void PluginTest::testManagerCreate()
+{
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Account { objectHandle: Manager.createAccount(\"cool\") }",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QVariantMap provider = qmlObject->property("provider").toMap();
+    QVERIFY(!provider.isEmpty());
+    QCOMPARE(provider["id"].toString(), QString("cool"));
+    QCOMPARE(provider["displayName"].toString(), QString("Cool provider"));
+    QCOMPARE(provider["iconName"].toString(), QString("general_myprovider"));
+
+    delete qmlObject;
+}
+
+void PluginTest::testManagerLoad()
+{
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Account *account1 = manager->createAccount("cool");
+    QVERIFY(account1 != 0);
+
+    account1->syncAndBlock();
+    QVERIFY(account1->id() != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("account1id", uint(account1->id()));
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Account { objectHandle: Manager.loadAccount(account1id) }",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QCOMPARE(qmlObject->property("accountId").toUInt(), account1->id());
+
+    QVariantMap provider = qmlObject->property("provider").toMap();
+    QVERIFY(!provider.isEmpty());
+    QCOMPARE(provider["id"].toString(), QString("cool"));
+    QCOMPARE(provider["displayName"].toString(), QString("Cool provider"));
+    QCOMPARE(provider["iconName"].toString(), QString("general_myprovider"));
+
+    delete manager;
+    delete qmlObject;
+}
+
+void PluginTest::testAccountInvalid()
+{
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Account {}",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QVERIFY(qmlObject->property("objectHandle").value<QObject*>() == 0);
+    QCOMPARE(qmlObject->property("enabled").toBool(), false);
+    QCOMPARE(qmlObject->property("displayName").toString(), QString());
+    QCOMPARE(qmlObject->property("accountId").toUInt(), uint(0));
+    QVariantMap provider = qmlObject->property("provider").toMap();
+    QVERIFY(provider.isEmpty());
+
+    qmlObject->setProperty("objectHandle", QVariant::fromValue<QObject*>(0));
+    QVERIFY(qmlObject->property("objectHandle").value<QObject*>() == 0);
+
+    bool ok;
+    ok = QMetaObject::invokeMethod(qmlObject, "updateDisplayName",
+                                   Q_ARG(QString, "dummy"));
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "updateEnabled",
+                                   Q_ARG(bool, "true"));
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "sync");
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "remove");
+    QVERIFY(ok);
+
+    delete qmlObject;
+}
+
+void PluginTest::testAccount()
+{
+    clearDb();
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Account { objectHandle: Manager.createAccount(\"cool\") }",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QObject *objectHandle =
+        qmlObject->property("objectHandle").value<QObject*>();
+    Account *account = qobject_cast<Account*>(objectHandle);
+    QVERIFY(account != 0);
+    QVERIFY(account->id() == 0);
+
+    QVariantMap provider = qmlObject->property("provider").toMap();
+    QVERIFY(!provider.isEmpty());
+    QCOMPARE(provider["id"].toString(), QString("cool"));
+
+    bool ok;
+    ok = QMetaObject::invokeMethod(qmlObject, "updateDisplayName",
+                                   Q_ARG(QString, "new name"));
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "updateEnabled",
+                                   Q_ARG(bool, "true"));
+    QVERIFY(ok);
+    ok = QMetaObject::invokeMethod(qmlObject, "sync");
+    QVERIFY(ok);
+
+    QTest::qWait(50);
+
+    /* Check that the changes have been recorded */
+    QVERIFY(account->id() != 0);
+    AccountId accountId = account->id();
+    QCOMPARE(qmlObject->property("accountId").toUInt(), uint(account->id()));
+    QCOMPARE(qmlObject->property("displayName").toString(), QString("new name"));
+    QCOMPARE(qmlObject->property("enabled").toBool(), true);
+
+    objectHandle =
+        qmlObject->property("accountServiceHandle").value<QObject*>();
+    AccountService *accountService =
+        qobject_cast<AccountService*>(objectHandle);
+    QVERIFY(accountService != 0);
+
+    /* Set the same account instance on the account; just to improve coverage
+     * of branches. */
+    ok = qmlObject->setProperty("objectHandle",
+                                QVariant::fromValue<QObject*>(account));
+    QVERIFY(ok);
+
+    /* Delete the account */
+    ok = QMetaObject::invokeMethod(qmlObject, "remove");
+    QVERIFY(ok);
+
+    QTest::qWait(50);
+
+    /* Check that the account has effectively been removed */
+    Manager *manager = new Manager(this);
+    Account *account1 = manager->account(accountId);
+    QVERIFY(account1 == 0);
+
+    delete qmlObject;
+}
+
+void PluginTest::testCredentials()
+{
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Credentials {"
+                      " userName: \"Smart User\"\n"
+                      " secret: \"Valuable password\"\n"
+                      " storeSecret: true\n"
+                      " caption: \"Service One\"\n"
+                      " acl: [ \"Me\", \"You\" ]\n"
+                      " methods: {\n"
+                      "  \"oauth\": [ \"one\", \"two\" ],"
+                      "  \"sasl\": [ \"plain\" ]"
+                      " }\n"
+                      "}",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QCOMPARE(qmlObject->property("userName").toString(),
+             QString("Smart User"));
+    QCOMPARE(qmlObject->property("secret").toString(),
+             QString("Valuable password"));
+    QCOMPARE(qmlObject->property("storeSecret").toBool(), true);
+    QCOMPARE(qmlObject->property("caption").toString(),
+             QString("Service One"));
+    QStringList acl;
+    acl << "Me" << "You";
+    QCOMPARE(qmlObject->property("acl").toStringList(), acl);
+    QVariantMap methods;
+    methods.insert("oauth", QStringList() << "one" << "two");
+    methods.insert("sasl", QStringList() << "plain");
+    QCOMPARE(qmlObject->property("methods").toMap(), methods);
+    QCOMPARE(qmlObject->property("credentialsId").toUInt(), uint(0));
+
+    /* Set a few fields to the same values, just to increase coverage of
+     * branches */
+    qmlObject->setProperty("credentialsId", uint(0));
+    qmlObject->setProperty("userName", "Smart User");
+    qmlObject->setProperty("secret", "Valuable password");
+    qmlObject->setProperty("storeSecret", true);
+    qmlObject->setProperty("caption", "Service One");
+    qmlObject->setProperty("methods", methods);
+    qmlObject->setProperty("acl", acl);
+
+    /* Remove the credentials; this won't do anything now */
+    bool ok;
+    ok = QMetaObject::invokeMethod(qmlObject, "remove");
+    QVERIFY(ok);
+
+    /* Store the credentials */
+    QSignalSpy synced(qmlObject, SIGNAL(synced()));
+    QSignalSpy credentialsIdChanged(qmlObject,
+                                    SIGNAL(credentialsIdChanged()));
+    ok = QMetaObject::invokeMethod(qmlObject, "sync");
+    QVERIFY(ok);
+
+    QTest::qWait(100);
+    QCOMPARE(synced.count(), 1);
+    synced.clear();
+    QCOMPARE(credentialsIdChanged.count(), 1);
+    credentialsIdChanged.clear();
+    uint credentialsId = qmlObject->property("credentialsId").toUInt();
+    QVERIFY(credentialsId != 0);
+
+    engine.rootContext()->setContextProperty("credsId", credentialsId);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "Credentials { credentialsId: credsId }",
+                      QUrl());
+    QObject *qmlObject2 = component.create();
+    QVERIFY(qmlObject2 != 0);
+
+    QCOMPARE(qmlObject2->property("credentialsId").toUInt(), credentialsId);
+
+    /* After some time, we should get the synced() signal and all fields should
+     * be loaded at that point */
+    QSignalSpy synced2(qmlObject2, SIGNAL(synced()));
+
+    QTest::qWait(100);
+    QCOMPARE(synced2.count(), 1);
+    synced2.clear();
+    QCOMPARE(qmlObject2->property("userName").toString(),
+             QString("Smart User"));
+
+    /* Set the credentialsId to 0, everything should continue to work */
+    qmlObject2->setProperty("credentialsId", uint(0));
+    QTest::qWait(100);
+    QCOMPARE(qmlObject2->property("userName").toString(),
+             QString("Smart User"));
+
+    /* test removal of the credentials */
+    QSignalSpy removed(qmlObject, SIGNAL(removed()));
+    ok = QMetaObject::invokeMethod(qmlObject, "remove");
+    QVERIFY(ok);
+
+    QTest::qWait(100);
+    QCOMPARE(removed.count(), 1);
+    removed.clear();
+
+    delete qmlObject2;
+    delete qmlObject;
+}
+
+void PluginTest::testAccountCredentialsRemoval_data()
+{
+    QTest::addColumn<bool>("removeCredentials");
+    QTest::addColumn<QString>("expectedUserName");
+    QTest::newRow("With credentials removal") << true << QString();
+    QTest::newRow("Without credentials removal") << false << QString("Happy user");
+}
+
+void PluginTest::testAccountCredentialsRemoval()
+{
+    QFETCH(bool, removeCredentials);
+    QFETCH(QString, expectedUserName);
+
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Account *account = manager->createAccount("cool");
+    QVERIFY(account != 0);
+
+    account->setEnabled(true);
+    account->setDisplayName("CoolAccount");
+    account->selectService(coolMail);
+    account->setEnabled(true);
+    account->syncAndBlock();
+
+    quint32 accountId = account->id();
+    QVERIFY(accountId != 0);
+
+    AccountService *globalService = new AccountService(account, Service());
+    QVERIFY(globalService != 0);
+    AccountService *mailService = new AccountService(account, coolMail);
+    QVERIFY(mailService != 0);
+
+    QList<AccountService*> services;
+    services.append(globalService);
+    services.append(mailService);
+
+    QQmlEngine engine;
+    Q_FOREACH (AccountService *accountService, services) {
+        engine.rootContext()->setContextProperty("accountService", accountService);
+        QQmlComponent component(&engine);
+        component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                          "AccountService {\n"
+                          " id: account\n"
+                          " objectHandle: accountService\n"
+                          " credentials: Credentials {\n"
+                          "  objectName: \"creds\"\n"
+                          "  userName: \"Happy user\"\n"
+                          "  caption: account.provider.displayName\n"
+                          " }\n"
+                          "}",
+                          QUrl());
+        QObject *qmlAccount = component.create();
+        QVERIFY(qmlAccount != 0);
+
+        QObject *qmlCredentials = qmlAccount->findChild<QObject*>("creds");
+        QVERIFY(qmlCredentials != 0);
+
+        /* Store the credentials */
+        bool ok;
+        ok = QMetaObject::invokeMethod(qmlCredentials, "sync");
+        QVERIFY(ok);
+        QTest::qWait(100);
+    }
+
+    /* And check that the credentialsId have now been written to the account*/
+    uint globalCredentialsId = globalService->value("CredentialsId").toUInt();
+    QVERIFY(globalCredentialsId != 0);
+    uint mailCredentialsId = mailService->value("CredentialsId").toUInt();
+    QVERIFY(mailCredentialsId != 0);
+    QVERIFY(mailCredentialsId != globalCredentialsId);
+
+    delete globalService;
+    delete mailService;
+    delete manager;
+
+    QQmlComponent accountComponent(&engine);
+    engine.rootContext()->setContextProperty("aid", accountId);
+    accountComponent.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                             "Account {\n"
+                             "  objectHandle: Manager.loadAccount(aid)\n"
+                             "  function removeAccount1() {\n"
+                             "    remove(Account.RemoveAccountOnly)\n"
+                             "  }\n"
+                             "  function removeAccount2() {\n"
+                             "    remove(Account.RemoveCredentials)\n"
+                             "  }\n"
+                             "}",
+                             QUrl());
+    QObject *qmlAccount = accountComponent.create();
+    QVERIFY(qmlAccount != 0);
+
+    /* test removal of the credentials */
+    QSignalSpy removed(qmlAccount, SIGNAL(removed()));
+    const char *removeFunction = removeCredentials ?
+        "removeAccount2" : "removeAccount1";
+    bool ok = QMetaObject::invokeMethod(qmlAccount, removeFunction);
+    QVERIFY(ok);
+
+    QTest::qWait(200);
+    QCOMPARE(removed.count(), 1);
+    removed.clear();
+
+    delete qmlAccount;
+
+    /* Verify that the credentials have actually been removed if
+     * removeCredentials was true, or retained if it was false. */
+    QList<uint> credentials;
+    credentials.append(globalCredentialsId);
+    credentials.append(mailCredentialsId);
+
+    Q_FOREACH (uint credentialsId, credentials) {
+        engine.rootContext()->setContextProperty("credsId", credentialsId);
+        QQmlComponent component(&engine);
+        component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                          "Credentials { credentialsId: credsId }",
+                          QUrl());
+        QObject *qmlCredentials = component.create();
+        QVERIFY(qmlCredentials != 0);
+
+        QTest::qWait(100);
+        QCOMPARE(qmlCredentials->property("userName").toString(), expectedUserName);
+    }
+}
+
+void PluginTest::testAccountServiceCredentials()
+{
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Account *account = manager->createAccount("cool");
+    QVERIFY(account != 0);
+
+    account->setEnabled(true);
+    account->setDisplayName("CoolAccount");
+    account->selectService(coolMail);
+    account->setEnabled(true);
+    account->syncAndBlock();
+
+    AccountService *accountService = new AccountService(account, coolMail);
+    QVERIFY(accountService != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("accountService", accountService);
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountService {\n"
+                      " id: account\n"
+                      " objectHandle: accountService\n"
+                      " credentials: Credentials {\n"
+                      "  objectName: \"creds\"\n"
+                      "  userName: \"Happy user\"\n"
+                      "  caption: account.provider.displayName\n"
+                      " }\n"
+                      "}",
+                      QUrl());
+    QObject *qmlAccount = component.create();
+    QVERIFY(qmlAccount != 0);
+
+    QObject *qmlCredentials = qmlAccount->findChild<QObject*>("creds");
+    QVERIFY(qmlCredentials != 0);
+
+    /* Sanity check */
+    QCOMPARE(qmlAccount->property("credentials").value<QObject*>(),
+             qmlCredentials);
+    QCOMPARE(qmlCredentials->property("userName").toString(),
+             QString("Happy user"));
+    QCOMPARE(qmlCredentials->property("caption").toString(),
+             QString("Cool provider"));
+
+    /* Store the credentials */
+    QSignalSpy synced(qmlCredentials, SIGNAL(synced()));
+    bool ok;
+    ok = QMetaObject::invokeMethod(qmlCredentials, "sync");
+    QVERIFY(ok);
+
+    /* Wait for the operation to finish, and verify it succeeded */
+    QTest::qWait(100);
+    QCOMPARE(synced.count(), 1);
+    synced.clear();
+    uint credentialsId = qmlCredentials->property("credentialsId").toUInt();
+    QVERIFY(credentialsId != 0);
+
+    /* Verify that autoSync is true (it should always be true by default */
+    QCOMPARE(qmlAccount->property("autoSync").toBool(), true);
+
+    /* And check that the credentialsId have now been written to the account*/
+    QVariantMap authData = qmlAccount->property("authData").toMap();
+    QVERIFY(!authData.isEmpty());
+    QCOMPARE(authData["credentialsId"].toUInt(), credentialsId);
+
+    /* Just to increase coverage */
+    qmlAccount->setProperty("credentials",
+                            QVariant::fromValue<QObject*>(qmlCredentials));
+    qmlAccount->setProperty("credentials", QVariant::fromValue<QObject*>(0));
+    QVERIFY(qmlAccount->property("credentials").value<QObject*>() == 0);
+
+    delete qmlAccount;
+    delete accountService;
+}
+
 QTEST_MAIN(PluginTest);
+#include "tst_plugin.moc"

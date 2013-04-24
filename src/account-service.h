@@ -22,10 +22,12 @@
 #include <QObject>
 #include <QPointer>
 #include <QQmlParserStatus>
+#include <QQmlProperty>
 #include <QVariantMap>
 
 namespace Accounts {
     class AccountService;
+    class Account;
 };
 
 namespace SignOn {
@@ -44,12 +46,17 @@ class AccountService: public QObject, public QQmlParserStatus
     Q_PROPERTY(QObject *objectHandle READ objectHandle \
                WRITE setObjectHandle NOTIFY objectHandleChanged)
     Q_PROPERTY(bool enabled READ enabled NOTIFY enabledChanged)
+    Q_PROPERTY(bool serviceEnabled READ serviceEnabled NOTIFY settingsChanged)
     Q_PROPERTY(QVariantMap provider READ provider NOTIFY objectHandleChanged)
     Q_PROPERTY(QVariantMap service READ service NOTIFY objectHandleChanged)
     Q_PROPERTY(QString displayName READ displayName NOTIFY displayNameChanged)
     Q_PROPERTY(uint accountId READ accountId NOTIFY objectHandleChanged)
     Q_PROPERTY(QVariantMap settings READ settings NOTIFY settingsChanged)
     Q_PROPERTY(QVariantMap authData READ authData NOTIFY settingsChanged)
+    Q_PROPERTY(bool autoSync READ autoSync WRITE setAutoSync \
+               NOTIFY autoSyncChanged)
+    Q_PROPERTY(QObject *credentials READ credentials WRITE setCredentials \
+               NOTIFY credentialsChanged)
 
 public:
     AccountService(QObject *parent = 0);
@@ -59,6 +66,7 @@ public:
     QObject *objectHandle() const;
 
     bool enabled() const;
+    bool serviceEnabled() const;
     QVariantMap provider() const;
     QVariantMap service() const;
     QString displayName() const;
@@ -66,7 +74,15 @@ public:
     QVariantMap settings() const;
     QVariantMap authData() const;
 
+    void setAutoSync(bool autoSync);
+    bool autoSync() const;
+
+    void setCredentials(QObject *credentials);
+    QObject *credentials() const;
+
     Q_INVOKABLE void authenticate(const QVariantMap &sessionData);
+    Q_INVOKABLE void updateServiceEnabled(bool enabled);
+    Q_INVOKABLE void updateSettings(const QVariantMap &settings);
 
     // reimplemented virtual methods
     void classBegin();
@@ -77,6 +93,8 @@ Q_SIGNALS:
     void enabledChanged();
     void displayNameChanged();
     void settingsChanged();
+    void autoSyncChanged();
+    void credentialsChanged();
 
     void authenticated(const QVariantMap &reply);
     void authenticationError(const QVariantMap &error);
@@ -84,12 +102,21 @@ Q_SIGNALS:
 private Q_SLOTS:
     void onAuthSessionResponse(const SignOn::SessionData &sessionData);
     void onAuthSessionError(const SignOn::Error &error);
+    void onCredentialsIdChanged();
+
+private:
+    void ensureAccount();
+    void syncIfDesired();
 
 private:
     QPointer<Accounts::AccountService> accountService;
+    Accounts::Account *account;
     SignOn::Identity *identity;
     QPointer<SignOn::AuthSession> authSession;
+    QPointer<QObject> m_credentials;
+    QQmlProperty credentialsIdProperty;
     bool constructed;
+    bool m_autoSync;
 };
 
 }; // namespace
