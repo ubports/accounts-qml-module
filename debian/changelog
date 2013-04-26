@@ -1,3 +1,9 @@
+accounts-qml-module (0.0bzr13.04.26-0ubuntu1) UNRELEASED; urgency=low
+
+  * Automatic snapshot from revision 15 (bootstrap)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Fri, 26 Apr 2013 14:35:58 -0400
+
 accounts-qml-module (0.0bzr13.03.08-0ubuntu1) raring; urgency=low
 
   * Upload for raring
