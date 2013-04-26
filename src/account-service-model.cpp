@@ -26,6 +26,8 @@
 
 using namespace OnlineAccounts;
 
+static const QLatin1String globalService("global");
+
 static bool sortByProviderAndDisplayName(const Accounts::AccountService *as1,
                                          const Accounts::AccountService *as2)
 {
@@ -138,9 +140,14 @@ AccountServiceModelPrivate::listAccountServices(Accounts::Account *account) cons
     if (!providerId.isEmpty() && account->providerName() != providerId)
         return ret;
 
-    foreach (Accounts::Service service, account->services()) {
-        if (!serviceId.isEmpty() && service.name() != serviceId) continue;
-        ret.append(new Accounts::AccountService(account, service));
+    if (serviceId == globalService) {
+        ret.append(new Accounts::AccountService(account,
+                                                Accounts::Service()));
+    } else {
+        foreach (Accounts::Service service, account->services()) {
+            if (!serviceId.isEmpty() && service.name() != serviceId) continue;
+            ret.append(new Accounts::AccountService(account, service));
+        }
     }
 
     return ret;
@@ -415,8 +422,10 @@ void AccountServiceModelPrivate::onAccountServiceEnabled(bool enabled)
  * \li \c serviceName is the name of the service (e.g., "Picasa")
  * \li \c enabled
  * \li \c accountService is a handle to the underlying Qt object which can be
- *     used to instantiate an AccountService from QML
- * \li \c accountId is numeric ID of the account
+ *     used to instantiate an \l AccountService from QML
+ * \li \c accountId is the numeric ID of the account
+ * \li \c account is a handle to the underlying Qt object which can be used to
+ *     instantiate an \l Account from QML
  * \endlist
  *
  * Examples of use:
@@ -483,6 +492,30 @@ void AccountServiceModelPrivate::onAccountServiceEnabled(bool enabled)
  *     }
  * }
  * \endqml
+ *
+ * 4. List all the online accounts, without their services:
+ * \qml
+ * Item {
+ *     AccountServiceModel {
+ *         id: accounts
+ *         service: "global"
+ *     }
+ *
+ *     ListView {
+ *         model: accounts
+ *         delegate: Rectangle {
+ *             id: rect
+ *
+ *             Text { text: account.displayName }
+ *
+ *             Account {
+ *                 id: account
+ *                 objectHandle: rect.model.account
+ *             }
+ *         }
+ *     }
+ * }
+ * \endqml
  */
 
 AccountServiceModel::AccountServiceModel(QObject *parent):
@@ -496,6 +529,7 @@ AccountServiceModel::AccountServiceModel(QObject *parent):
     d->roleNames[EnabledRole] = "enabled";
     d->roleNames[AccountServiceRole] = "accountService";
     d->roleNames[AccountIdRole] = "accountId";
+    d->roleNames[AccountRole] = "account";
 
     QObject::connect(this, SIGNAL(rowsInserted(const QModelIndex &,int,int)),
                      this, SIGNAL(countChanged()));
@@ -707,6 +741,9 @@ QVariant AccountServiceModel::data(const QModelIndex &index, int role) const
         break;
     case AccountIdRole:
         ret = accountService->account()->id();
+        break;
+    case AccountRole:
+        ret = QVariant::fromValue<QObject*>(accountService->account());
         break;
     }
 

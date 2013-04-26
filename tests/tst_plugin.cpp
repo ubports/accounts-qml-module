@@ -149,6 +149,10 @@ void PluginTest::testModel()
     QCOMPARE(get(model, 0, "displayName").toString(), QString("BadAccount"));
     QCOMPARE(get(model, 0, "providerName").toString(), QString("Bad provider"));
     QCOMPARE(get(model, 0, "accountId").toUInt(), account2->id());
+    Account *tmpAccount =
+        qobject_cast<Account*>(get(model, 0, "account").value<QObject*>());
+    QVERIFY(tmpAccount != 0);
+    QCOMPARE(tmpAccount->id(), account2->id());
     QCOMPARE(get(model, 1, "displayName").toString(), QString("BadAccount"));
     QCOMPARE(get(model, 1, "providerName").toString(), QString("Bad provider"));
     QCOMPARE(get(model, 2, "displayName").toString(), QString("CoolAccount"));
@@ -213,6 +217,20 @@ void PluginTest::testModel()
     QCOMPARE(get(model, 0, "providerName").toString(), QString("Cool provider"));
     QCOMPARE(get(model, 0, "serviceName").toString(), QString("Cool Mail"));
     QCOMPARE(get(model, 0, "enabled").toBool(), true);
+    /* Retrieve global accounts */
+    model->setProperty("service", QString("global"));
+    QCOMPARE(model->property("service").toString(), QString("global"));
+    QTest::qWait(10);
+    QCOMPARE(model->rowCount(), 2);
+    QCOMPARE(get(model, 0, "providerName").toString(), QString("Bad provider"));
+    QCOMPARE(get(model, 1, "providerName").toString(), QString("Cool provider"));
+    /* The AccountService objects should refer to a null Service */
+    for (int i = 0; i < 2; i++) {
+        QObject *tmp = get(model, i, "accountService").value<QObject*>();
+        AccountService *accountService1 = qobject_cast<AccountService*>(tmp);
+        QVERIFY(accountService1 != 0);
+        QVERIFY(!accountService1->service().isValid());
+    }
 
     /* Test the service-type filter */
     model->setProperty("serviceType", QString("sharing"));
