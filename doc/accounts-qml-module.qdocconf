@@ -1,18 +1,8 @@
-#include(compat.qdocconf)
-
-project = OnlineAccounts QML API
-description = QML API for using online accounts
-outputdir   = html
-outputformats = HTML
-headerdirs = ../src
-sourcedirs = ../src
-sources.fileextensions = "*.qml *.qdoc *.cpp"
-exampledirs = ./examples
-imagedirs   = ./images
+include(accounts-qml-module-common.qdocconf)
 
 HTML.templatedir = .
 HTML.nobreadcrumbs = "true"
-HTML.stylesheets = qtquick.css
+HTML.stylesheets = doc/qtquick.css
 HTML.headerstyles = "  <link rel=\"stylesheet\" type=\"text/css\" href=\"style/qtquick.css\" />\n"
 HTML.endheader = "</head>\n"
 HTML.footer = "<div class=\"footer\">Copyright (C) 2013 Canonical Ltd.</div>\n"
