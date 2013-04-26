@@ -56,6 +56,7 @@ public:
         EnabledRole,
         AccountServiceRole,
         AccountIdRole,
+        AccountRole,
     };
 
     void setIncludeDisabled(bool includeDisabled);
