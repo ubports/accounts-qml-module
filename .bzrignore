@@ -1,6 +1,5 @@
 /coverage-html
 /coverage.info
-/doc/html
 *.gcda
 *.gcno
 *.moc

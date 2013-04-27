@@ -1,5 +1,6 @@
 include(common-vars.pri)
 include(common-project-config.pri)
+include(doc/doc.pri)
 
 TEMPLATE = subdirs
 CONFIG += ordered
@@ -18,4 +19,3 @@ dist.commands = "tar -cvjf $${DISTNAME}.tar.bz2 $$EXCLUDES --transform='s,^,$$DI
 dist.depends = distclean
 QMAKE_EXTRA_TARGETS += dist
 
-include(doc/doc.pri)

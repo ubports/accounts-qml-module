@@ -25,3 +25,15 @@ Depends: ${misc:Depends},
 Description: Expose the Online Accounts API to QML applications
  This module provides access to the Online Accounts framework from QML
  applications.
+
+Package: accounts-qml-module-doc
+Section: doc
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends},
+Description: Online Accounts QML - documentation
+ This module provides access to the Online Accounts framework from QML
+ applications.
+ .
+ This package contains developer documentation.
+
