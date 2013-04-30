@@ -45,19 +45,11 @@ static QVariantMap mergeMaps(const QVariantMap &map1,
     return map;
 }
 
-void AccountService::ensureAccount()
-{
-    if (account == 0) {
-        account = accountService->account();
-        /* By default, the parent is the manager; but we don't want that. */
-        account->setParent(this);
-    }
-}
-
 void AccountService::syncIfDesired()
 {
     if (m_autoSync) {
-        ensureAccount();
+        Accounts::Account *account = accountService->account();
+        if (Q_UNLIKELY(account == 0)) return;
         /* If needed, we could optimize this to call account->sync() when
          * re-entering the main loop, in order to reduce the number or writes.
          * But this would be better done in the Account class itself (and even
@@ -84,7 +76,6 @@ void AccountService::syncIfDesired()
 AccountService::AccountService(QObject *parent):
     QObject(parent),
     accountService(0),
-    account(0),
     identity(0),
     m_credentials(0),
     constructed(false),
@@ -94,7 +85,6 @@ AccountService::AccountService(QObject *parent):
 
 AccountService::~AccountService()
 {
-    delete account;
 }
 
 /*!
@@ -120,8 +110,6 @@ void AccountService::setObjectHandle(QObject *object)
                      this, SIGNAL(enabledChanged()));
     delete identity;
     identity = 0;
-    delete account;
-    account = 0;
     Q_EMIT objectHandleChanged();
 
     /* Emit the changed signals for all other properties, to make sure
@@ -179,10 +167,10 @@ QVariantMap AccountService::provider() const
     QVariantMap map;
     if (Q_UNLIKELY(accountService == 0)) return map;
 
-    // TODO: use the new account->provider() method
     Accounts::Account *account = accountService->account();
-    QString providerName = account->providerName();
-    Accounts::Provider provider = account->manager()->provider(providerName);
+    if (account == 0) return map;
+
+    Accounts::Provider provider = account->provider();
     map.insert("id", provider.name());
     map.insert("displayName", provider.displayName());
     map.insert("iconName", provider.iconName());
@@ -345,7 +333,8 @@ QObject *AccountService::credentials() const
 void AccountService::updateServiceEnabled(bool enabled)
 {
     if (Q_UNLIKELY(accountService == 0)) return;
-    ensureAccount();
+    Accounts::Account *account = accountService->account();
+    if (Q_UNLIKELY(account == 0)) return;
     account->selectService(accountService->service());
     account->setEnabled(enabled);
     syncIfDesired();
