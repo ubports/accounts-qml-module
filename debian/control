@@ -18,7 +18,7 @@ Homepage: https://launchpad.net/accounts-qml-module
 Vcs-Bzr: https://code.launchpad.net/~online-accounts/accounts-qml-module/trunk
 
 Package: qtdeclarative5-accounts-plugin
-Architecture: any
+Architecture: amd64 i386 armhf
 Depends: ${misc:Depends},
          ${shlibs:Depends},
          qtdeclarative5-qtquick2-plugin,

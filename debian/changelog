@@ -2,6 +2,8 @@ accounts-qml-module (0.0bzr13.04.26-0ubuntu2) raring; urgency=low
 
   [ Ken VanDine ]
   * Automatic snapshot from revision 15 (bootstrap)
+  * debian/control
+    - Only build for arches supported by qtdeclarative5
 
   [ Alberto Mardegan ]
   * Support the latest libaccounts-qt
