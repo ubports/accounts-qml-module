@@ -1,10 +1,14 @@
-accounts-qml-module (0.0bzr13.04.26-0ubuntu1) UNRELEASED; urgency=low
+accounts-qml-module (0.0bzr13.04.26-0ubuntu2) raring; urgency=low
 
+  [ Ken VanDine ]
   * Automatic snapshot from revision 15 (bootstrap)
 
- -- Ken VanDine <ken.vandine@canonical.com>  Fri, 26 Apr 2013 14:35:58 -0400
+  [ Alberto Mardegan ]
+  * Support the latest libaccounts-qt
 
-accounts-qml-module (0.0bzr13.04.25-0ubuntu1) UNRELEASED; urgency=low
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Tue, 30 Apr 2013 15:18:06 -0700
+
+accounts-qml-module (0.0bzr13.04.25-0ubuntu1) raring; urgency=low
 
   * Added doc package
 

@@ -27,7 +27,6 @@
 
 namespace Accounts {
     class AccountService;
-    class Account;
 };
 
 namespace SignOn {
@@ -105,12 +104,10 @@ private Q_SLOTS:
     void onCredentialsIdChanged();
 
 private:
-    void ensureAccount();
     void syncIfDesired();
 
 private:
     QPointer<Accounts::AccountService> accountService;
-    Accounts::Account *account;
     SignOn::Identity *identity;
     QPointer<SignOn::AuthSession> authSession;
     QPointer<QObject> m_credentials;
