@@ -1,3 +1,9 @@
+accounts-qml-module (0.0bzr13.04.26daily13.05.01.1ubuntu.unity.next-0ubuntu1) raring; urgency=low
+
+  * Automatic snapshot from revision 22 (ubuntu-unity/next)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 01 May 2013 07:53:29 +0000
+
 accounts-qml-module (0.0bzr13.04.26-0ubuntu2) raring; urgency=low
 
   [ Ken VanDine ]
