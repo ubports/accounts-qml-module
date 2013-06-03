@@ -284,6 +284,7 @@ void AuthSession::process(const SessionData &sessionData,
 {
     m_mechanism = mechanism;
     m_sessionData = sessionData.toMap();
+    m_sessionData.insert("credentialsId", m_id);
 
     responseTimer.start();
 }
