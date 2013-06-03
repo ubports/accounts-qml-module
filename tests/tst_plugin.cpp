@@ -45,6 +45,7 @@ private Q_SLOTS:
     void testAccountService();
     void testAccountServiceUpdate();
     void testAuthentication();
+    void testAuthenticationWithCredentials();
     void testManagerCreate();
     void testManagerLoad();
     void testAccountInvalid();
@@ -742,6 +743,76 @@ void PluginTest::testAuthentication()
 
     delete manager;
     delete qmlObject;
+}
+
+void PluginTest::testAuthenticationWithCredentials()
+{
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Account *account = manager->createAccount("cool");
+    QVERIFY(account != 0);
+
+    AccountService *accountService = new AccountService(account, coolMail);
+    QVERIFY(accountService != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("accountService", accountService);
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountService {\n"
+                      " id: account\n"
+                      " autoSync: false\n"
+                      " objectHandle: accountService\n"
+                      " credentials: Credentials {\n"
+                      "  objectName: \"creds\"\n"
+                      "  userName: \"Happy user\"\n"
+                      "  caption: account.provider.displayName\n"
+                      " }\n"
+                      "}",
+                      QUrl());
+    QObject *qmlAccount = component.create();
+    QVERIFY(qmlAccount != 0);
+
+    QSignalSpy authenticated(qmlAccount,
+                             SIGNAL(authenticated(const QVariantMap &)));
+    QSignalSpy authenticationError(qmlAccount,
+        SIGNAL(authenticationError(const QVariantMap &)));
+
+    QObject *qmlCredentials = qmlAccount->findChild<QObject*>("creds");
+    QVERIFY(qmlCredentials != 0);
+
+    /* Store the credentials */
+    QSignalSpy synced(qmlCredentials, SIGNAL(synced()));
+    bool ok;
+    ok = QMetaObject::invokeMethod(qmlCredentials, "sync");
+    QVERIFY(ok);
+
+    /* Wait for the operation to finish, and verify it succeeded */
+    QTest::qWait(100);
+    QCOMPARE(synced.count(), 1);
+    synced.clear();
+    uint credentialsId = qmlCredentials->property("credentialsId").toUInt();
+    QVERIFY(credentialsId != 0);
+
+    QVariantMap sessionData;
+    sessionData.insert("test", QString("OK"));
+    QMetaObject::invokeMethod(qmlAccount, "authenticate",
+                              Q_ARG(QVariantMap, sessionData));
+    QTest::qWait(50);
+
+    QCOMPARE(authenticationError.count(), 0);
+    QCOMPARE(authenticated.count(), 1);
+    QVariantMap reply = authenticated.at(0).at(0).toMap();
+    QVERIFY(!reply.isEmpty());
+    QCOMPARE(reply["test"].toString(), QString("OK"));
+    QCOMPARE(reply["host"].toString(), QString("coolmail.ex"));
+    /* Check that the newly created credentials were used */
+    QCOMPARE(reply["credentialsId"].toUInt(), credentialsId);
+    authenticated.clear();
+
+    delete manager;
+    delete qmlAccount;
 }
 
 void PluginTest::testManagerCreate()

@@ -381,7 +381,7 @@ void AccountService::updateSettings(const QVariantMap &settings)
  */
 void AccountService::authenticate(const QVariantMap &sessionData)
 {
-    DEBUG();
+    DEBUG() << sessionData;
     if (Q_UNLIKELY(accountService == 0)) {
         QVariantMap error;
         error.insert("code", SignOn::Error::WrongState);
@@ -392,8 +392,11 @@ void AccountService::authenticate(const QVariantMap &sessionData)
 
     Accounts::AuthData authData = accountService->authData();
     if (identity == 0) {
+        quint32 credentialsId = credentialsIdProperty.read().toUInt();
+        if (credentialsId == 0)
+            credentialsId = authData.credentialsId();
         identity =
-            SignOn::Identity::existingIdentity(authData.credentialsId(), this);
+            SignOn::Identity::existingIdentity(credentialsId, this);
     }
     if (authSession == 0) {
         authSession = identity->createSession(authData.method());

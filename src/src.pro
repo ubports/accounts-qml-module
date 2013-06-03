@@ -21,8 +21,10 @@ PKGCONFIG += \
     accounts-qt5 \
     libsignon-qt5
 
-DEFINES += \
-    DEBUG_ENABLED
+CONFIG(debug) {
+    DEFINES += \
+        DEBUG_ENABLED
+}
 
 SOURCES += \
     account-service-model.cpp \
