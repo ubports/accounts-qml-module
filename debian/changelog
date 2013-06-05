@@ -1,3 +1,27 @@
+accounts-qml-module (0.0bzr13.04.26daily13.06.05.1-0ubuntu1) saucy; urgency=low
+
+  [ Ken VanDine ]
+  * added top-level qdoc to generate a main page .
+
+  [ Alberto Mardegan ]
+  * Implement account editing functionality Introduce a few new objects
+    which provide functionalities exposed by other parts of the
+    framework: Account, Manager, Credentials. Expand the AccountService
+    class with methods to change account settings. Improve the
+    documentation, add one more example file.
+  * Add a way to enumerate the global accounts.
+  * Change license to LGPL 2.1 .
+  * When authenticating, use Credentials object when available When
+    performing an authentication, let the Accountservice use the
+    Credentials object attached to it, falling back to the stored
+    "credentialsId" field only if the Credentials object is not there or
+    hasn't yet been stored to the DB. .
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 26
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 05 Jun 2013 18:49:05 +0000
+
 accounts-qml-module (0.0bzr13.04.26daily13.05.01.1ubuntu.unity.next-0ubuntu1) raring; urgency=low
 
   * Automatic snapshot from revision 22 (ubuntu-unity/next)
