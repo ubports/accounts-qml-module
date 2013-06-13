@@ -30,6 +30,8 @@ SOURCES += \
     account-service-model.cpp \
     account-service.cpp \
     account.cpp \
+    application-model.cpp \
+    application.cpp \
     credentials.cpp \
     manager.cpp \
     plugin.cpp \
@@ -39,6 +41,8 @@ HEADERS += \
     account-service-model.h \
     account-service.h \
     account.h \
+    application-model.h \
+    application.h \
     credentials.h \
     debug.h \
     manager.h \

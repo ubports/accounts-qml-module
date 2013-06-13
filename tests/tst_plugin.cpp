@@ -54,6 +54,7 @@ private Q_SLOTS:
     void testAccountCredentialsRemoval_data();
     void testAccountCredentialsRemoval();
     void testAccountServiceCredentials();
+    void testApplicationModel();
 
 private:
     void clearDb();
@@ -84,6 +85,7 @@ void PluginTest::initTestCase()
 {
     qputenv("QML2_IMPORT_PATH", "../src");
     qputenv("ACCOUNTS", "/tmp/");
+    qputenv("AG_APPLICATIONS", APPLICATIONS_DIR);
     qputenv("AG_SERVICES", SERVICES_DIR);
     qputenv("AG_SERVICE_TYPES", SERVICE_TYPES_DIR);
     qputenv("AG_PROVIDERS", PROVIDERS_DIR);
@@ -1276,6 +1278,54 @@ void PluginTest::testAccountServiceCredentials()
 
     delete qmlAccount;
     delete accountService;
+}
+
+void PluginTest::testApplicationModel()
+{
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "ApplicationModel {}",
+                      QUrl());
+    QObject *qmlModel = component.create();
+    QVERIFY(qmlModel != 0);
+    QAbstractListModel *model = qobject_cast<QAbstractListModel*>(qmlModel);
+    QVERIFY(model != 0);
+
+    QCOMPARE(model->rowCount(), 0);
+    /* Retrieve a couple of invalid indexes */
+    QVERIFY(!get(model, 0, "applicationId").isValid());
+    QVERIFY(!get(model, -1, "applicationId").isValid());
+
+    /* Set a valid service on the model */
+    qmlModel->setProperty("service", QString("badmail"));
+    QCOMPARE(model->property("service").toString(), QString("badmail"));
+
+    QCOMPARE(model->rowCount(), 1);
+    QCOMPARE(model->property("count").toInt(), 1);
+
+    QCOMPARE(get(model, 0, "applicationId").toString(), QString("mailer"));
+    QCOMPARE(get(model, 0, "serviceUsage").toString(),
+             QString("Mailer can retrieve your e-mails"));
+
+
+    QVariant value;
+    QVERIFY(QMetaObject::invokeMethod(model, "get",
+                                      Q_RETURN_ARG(QVariant, value),
+                                      Q_ARG(int, 0),
+                                      Q_ARG(QString, "applicationId")));
+    QCOMPARE(value.toString(), QString("mailer"));
+
+    /* Get an Application from the model */
+    QObject *application = get(model, 0, "application").value<QObject*>();
+    QCOMPARE(application->metaObject()->className(),
+             "OnlineAccounts::Application");
+
+    /* Reset the model to an invalid service */
+    qmlModel->setProperty("service", QString());
+    QCOMPARE(model->rowCount(), 0);
+
+    delete qmlModel;
 }
 
 QTEST_MAIN(PluginTest);

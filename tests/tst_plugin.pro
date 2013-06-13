@@ -25,6 +25,7 @@ INCLUDEPATH += \
 DATA_PATH = $${TOP_SRC_DIR}/tests/data/
 
 DEFINES += \
+    APPLICATIONS_DIR=\\\"$$DATA_PATH\\\" \
     SERVICES_DIR=\\\"$$DATA_PATH\\\" \
     SERVICE_TYPES_DIR=\\\"$$DATA_PATH\\\" \
     PROVIDERS_DIR=\\\"$$DATA_PATH\\\"
