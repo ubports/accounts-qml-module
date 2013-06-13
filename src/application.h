@@ -20,7 +20,6 @@
 #define ONLINE_ACCOUNTS_APPLICATION_H
 
 #include <QObject>
-#include <QVariantMap>
 
 #include <Accounts/Application>
 
