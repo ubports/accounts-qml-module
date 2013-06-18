@@ -1,3 +1,13 @@
+accounts-qml-module (0.0bzr13.04.26daily13.06.18-0ubuntu1) saucy; urgency=low
+
+  [ Alberto Mardegan ]
+  * Add ApplicationModel.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 28
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 18 Jun 2013 04:31:03 +0000
+
 accounts-qml-module (0.0bzr13.04.26daily13.06.05.1-0ubuntu1) saucy; urgency=low
 
   [ Ken VanDine ]
