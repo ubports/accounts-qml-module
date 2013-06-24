@@ -54,9 +54,11 @@ public:
         ProviderNameRole,
         ServiceNameRole,
         EnabledRole,
-        AccountServiceRole,
+        AccountServiceHandleRole,
+        AccountServiceRole, // deprecated
         AccountIdRole,
-        AccountRole,
+        AccountHandleRole,
+        AccountRole, // deprecated
     };
 
     void setIncludeDisabled(bool includeDisabled);

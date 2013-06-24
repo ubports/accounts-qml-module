@@ -421,11 +421,11 @@ void AccountServiceModelPrivate::onAccountServiceEnabled(bool enabled)
  * \li \c providerName is the name of the account provider (e.g., "Google")
  * \li \c serviceName is the name of the service (e.g., "Picasa")
  * \li \c enabled
- * \li \c accountService is a handle to the underlying Qt object which can be
- *     used to instantiate an \l AccountService from QML
+ * \li \c accountServiceHandle is a handle to the underlying Qt object which
+ *     can be used to instantiate an \l AccountService from QML
  * \li \c accountId is the numeric ID of the account
- * \li \c account is a handle to the underlying Qt object which can be used to
- *     instantiate an \l Account from QML
+ * \li \c accountHandle is a handle to the underlying Qt object which can be
+ *     used to instantiate an \l Account from QML
  * \endlist
  *
  * Examples of use:
@@ -478,7 +478,7 @@ void AccountServiceModelPrivate::onAccountServiceEnabled(bool enabled)
  *
  *             AccountService {
  *                 id: accountService
- *                 objectHandle: rect.model.accountService
+ *                 objectHandle: rect.model.accountServiceHandle
  *
  *                 onAuthenticated: { console.log("Access token is " + reply.AccessToken) }
  *                 onAuthenticationError: { console.log("Authentication failed, code " + error.code) }
@@ -510,7 +510,7 @@ void AccountServiceModelPrivate::onAccountServiceEnabled(bool enabled)
  *
  *             Account {
  *                 id: account
- *                 objectHandle: rect.model.account
+ *                 objectHandle: rect.model.accountHandle
  *             }
  *         }
  *     }
@@ -527,8 +527,10 @@ AccountServiceModel::AccountServiceModel(QObject *parent):
     d->roleNames[ProviderNameRole] = "providerName";
     d->roleNames[ServiceNameRole] = "serviceName";
     d->roleNames[EnabledRole] = "enabled";
+    d->roleNames[AccountServiceHandleRole] = "accountServiceHandle";
     d->roleNames[AccountServiceRole] = "accountService";
     d->roleNames[AccountIdRole] = "accountId";
+    d->roleNames[AccountHandleRole] = "accountHandle";
     d->roleNames[AccountRole] = "account";
 
     QObject::connect(this, SIGNAL(rowsInserted(const QModelIndex &,int,int)),
@@ -711,7 +713,7 @@ QVariant AccountServiceModel::data(const QModelIndex &index, int role) const
 
     if (index.row() >= d->modelItems.count()) return QVariant();
 
-    const Accounts::AccountService *accountService = d->modelItems.at(index.row());
+    Accounts::AccountService *accountService = d->modelItems.at(index.row());
     QVariant ret;
 
     switch (role) {
@@ -737,12 +739,16 @@ QVariant AccountServiceModel::data(const QModelIndex &index, int role) const
         ret = accountService->enabled();
         break;
     case AccountServiceRole:
-        ret = QVariant(QMetaType::QObjectStar, &accountService);
+        qWarning("accountService role is deprecated, use accountServiceHandle");
+    case AccountServiceHandleRole:
+        ret = QVariant::fromValue<QObject*>(accountService);
         break;
     case AccountIdRole:
         ret = accountService->account()->id();
         break;
     case AccountRole:
+        qWarning("account role is deprecated, use accountHandle");
+    case AccountHandleRole:
         ret = QVariant::fromValue<QObject*>(accountService->account());
         break;
     }

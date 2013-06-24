@@ -52,7 +52,7 @@ MainView {
                 height: childrenRect.height
                 AccountService { 
                     id: accts
-                    objectHandle: accountService
+                    objectHandle: accountServiceHandle
                     onAuthenticated: { console.log("Access token is " + reply.AccessToken) }
                     onAuthenticationError: { console.log("Authentication failed, code " + error.code) }
                     Component.onCompleted: {
