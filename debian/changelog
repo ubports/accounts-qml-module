@@ -1,4 +1,4 @@
-accounts-qml-module (0.0bzr13.04.26daily13.06.05.1-0ubuntu2) UNRELEASED; urgency=low
+accounts-qml-module (0.1-0ubuntu2) UNRELEASED; urgency=low
 
   * Add ApplicationModel component.
 
