@@ -85,10 +85,11 @@ void PluginTest::initTestCase()
 {
     qputenv("QML2_IMPORT_PATH", "../src");
     qputenv("ACCOUNTS", "/tmp/");
-    qputenv("AG_APPLICATIONS", APPLICATIONS_DIR);
-    qputenv("AG_SERVICES", SERVICES_DIR);
-    qputenv("AG_SERVICE_TYPES", SERVICE_TYPES_DIR);
-    qputenv("AG_PROVIDERS", PROVIDERS_DIR);
+    qputenv("AG_APPLICATIONS", TEST_DATA_DIR);
+    qputenv("AG_SERVICES", TEST_DATA_DIR);
+    qputenv("AG_SERVICE_TYPES", TEST_DATA_DIR);
+    qputenv("AG_PROVIDERS", TEST_DATA_DIR);
+    qputenv("XDG_DATA_HOME", TEST_DATA_DIR);
 
     clearDb();
 }
@@ -1305,6 +1306,8 @@ void PluginTest::testApplicationModel()
     QCOMPARE(model->property("count").toInt(), 1);
 
     QCOMPARE(get(model, 0, "applicationId").toString(), QString("mailer"));
+    QCOMPARE(get(model, 0, "displayName").toString(), QString("Easy Mailer"));
+    QCOMPARE(get(model, 0, "iconName").toString(), QString("mailer-icon"));
     QCOMPARE(get(model, 0, "serviceUsage").toString(),
              QString("Mailer can retrieve your e-mails"));
 

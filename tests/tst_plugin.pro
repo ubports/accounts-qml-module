@@ -25,10 +25,7 @@ INCLUDEPATH += \
 DATA_PATH = $${TOP_SRC_DIR}/tests/data/
 
 DEFINES += \
-    APPLICATIONS_DIR=\\\"$$DATA_PATH\\\" \
-    SERVICES_DIR=\\\"$$DATA_PATH\\\" \
-    SERVICE_TYPES_DIR=\\\"$$DATA_PATH\\\" \
-    PROVIDERS_DIR=\\\"$$DATA_PATH\\\"
+    TEST_DATA_DIR=\\\"$$DATA_PATH\\\"
 
 check.commands = "LD_LIBRARY_PATH=mock:${LD_LIBRARY_PATH} xvfb-run -a dbus-test-runner -m 120 -t ./$${TARGET}"
 check.depends = $${TARGET}

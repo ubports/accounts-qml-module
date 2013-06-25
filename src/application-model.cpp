@@ -118,8 +118,10 @@ QVariant ApplicationModel::data(const QModelIndex &index, int role) const
         ret = application->name();
         break;
     case DisplayNameRole:
+        ret = application->displayName();
+        break;
     case IconNameRole:
-        // FIXME: implement when libaccounts-qt 1.8 is released
+        ret = application->iconName();
         break;
     case ServiceUsageRole:
         ret = application->serviceUsage(m_service);
