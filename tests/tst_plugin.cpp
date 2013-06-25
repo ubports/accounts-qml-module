@@ -153,10 +153,12 @@ void PluginTest::testModel()
     QCOMPARE(get(model, 0, "displayName").toString(), QString("BadAccount"));
     QCOMPARE(get(model, 0, "providerName").toString(), QString("Bad provider"));
     QCOMPARE(get(model, 0, "accountId").toUInt(), account2->id());
-    Account *tmpAccount =
-        qobject_cast<Account*>(get(model, 0, "account").value<QObject*>());
+    QObject *accountHandle = get(model, 0, "accountHandle").value<QObject*>();
+    Account *tmpAccount = qobject_cast<Account*>(accountHandle);
     QVERIFY(tmpAccount != 0);
     QCOMPARE(tmpAccount->id(), account2->id());
+    // Same value, but using the deprecated role name
+    QCOMPARE(get(model, 0, "account").value<QObject*>(), accountHandle);
     QCOMPARE(get(model, 1, "displayName").toString(), QString("BadAccount"));
     QCOMPARE(get(model, 1, "providerName").toString(), QString("Bad provider"));
     QCOMPARE(get(model, 2, "displayName").toString(), QString("CoolAccount"));
@@ -168,9 +170,13 @@ void PluginTest::testModel()
                                       Q_ARG(int, 2),
                                       Q_ARG(QString, "providerName")));
     QCOMPARE(value.toString(), QString("Cool provider"));
-    QObject *accountService = get(model, 2, "accountService").value<QObject*>();
-    QVERIFY(accountService != 0);
-    QCOMPARE(accountService->metaObject()->className(), "Accounts::AccountService");
+    QObject *accountServiceHandle =
+        get(model, 2, "accountServiceHandle").value<QObject*>();
+    QVERIFY(accountServiceHandle != 0);
+    QCOMPARE(accountServiceHandle->metaObject()->className(), "Accounts::AccountService");
+    // Same value, but using the deprecated role name
+    QCOMPARE(get(model, 2, "accountService").value<QObject*>(),
+             accountServiceHandle);
 
     model->setProperty("includeDisabled", true);
     QCOMPARE(model->property("includeDisabled").toBool(), true);
@@ -230,7 +236,7 @@ void PluginTest::testModel()
     QCOMPARE(get(model, 1, "providerName").toString(), QString("Cool provider"));
     /* The AccountService objects should refer to a null Service */
     for (int i = 0; i < 2; i++) {
-        QObject *tmp = get(model, i, "accountService").value<QObject*>();
+        QObject *tmp = get(model, i, "accountServiceHandle").value<QObject*>();
         AccountService *accountService1 = qobject_cast<AccountService*>(tmp);
         QVERIFY(accountService1 != 0);
         QVERIFY(!accountService1->service().isValid());
