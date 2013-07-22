@@ -3,10 +3,11 @@
 *.gcda
 *.gcno
 *.moc
+*.o
 Makefile.*
 Makefile
 moc_*
 /src/qmldir
 /src/Ubuntu
-/tests/mock/libsignon-qt5.so.*
+/tests/mock/libsignon-qt5.so*
 /tests/tst_plugin
