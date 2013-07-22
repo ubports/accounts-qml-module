@@ -2,7 +2,7 @@ include(../common-installs-config.pri)
 
 QDOC = $$[QT_INSTALL_BINS]/qdoc
 
-QMAKE_EXTRA_TARGETS += docs clean-docs docs-html clean-docs-html
+QMAKE_EXTRA_TARGETS += clean-docs docs-html clean-docs-html
 
 CONFIG(ubuntu-docs) {
     docs-html.commands = \
