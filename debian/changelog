@@ -1,3 +1,19 @@
+accounts-qml-module (0.1+13.10.20130725-0ubuntu1) saucy; urgency=low
+
+  [ Ken VanDine ]
+  * Bootstrapping the import from upstream git.
+
+  [ Alberto Mardegan ]
+  * Bootstrapping the import from upstream git.
+
+  [ Automatic PS uploader ]
+  * Bootstrapping the import from upstream git.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 33
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 25 Jul 2013 04:31:50 +0000
+
 accounts-qml-module (0.1+13.10.20130626-0ubuntu1) saucy; urgency=low
 
   [ Alberto Mardegan ]
