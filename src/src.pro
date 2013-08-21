@@ -70,3 +70,19 @@ INSTALLS += target
 qmldir.files = qmldir
 qmldir.path = $${PLUGIN_INSTALL_BASE}
 INSTALLS += qmldir
+
+generateQmlTypes.output = $${DESTDIR}/plugin.qmltypes
+generateQmlTypes.input = QML_PLUGINS
+generateQmlTypes.commands = export LD_PRELOAD=${QMAKE_FILE_IN}; $$[QT_INSTALL_BINS]/qmlplugindump -notrelocatable $${API_URI} 0.1 .. > ${QMAKE_FILE_OUT}
+generateQmlTypes.name = Generate ${QMAKE_FILE_OUT}
+generateQmlTypes.CONFIG += no_link
+generateQmlTypes.variable_out = QML_TYPES
+QMAKE_EXTRA_COMPILERS += generateQmlTypes
+
+QML_PLUGINS += $${DESTDIR}/lib$${TARGET}.so
+
+qmltypes.path = $${PLUGIN_INSTALL_BASE}
+qmltypes.files = $${DESTDIR}/plugin.qmltypes
+qmltypes.depends = $${DESTDIR}/plugin.qmltypes
+qmltypes.CONFIG += no_check_exist
+INSTALLS += qmltypes
