@@ -240,6 +240,7 @@ protected:
 public:
     void process(const SessionData &sessionData,
                  const QString &mechanism = QString());
+    void cancel();
 
 Q_SIGNALS:
     void error(const SignOn::Error &err);

@@ -45,6 +45,7 @@ private Q_SLOTS:
     void testAccountService();
     void testAccountServiceUpdate();
     void testAuthentication();
+    void testAuthenticationCancel();
     void testAuthenticationWithCredentials();
     void testManagerCreate();
     void testManagerLoad();
@@ -750,6 +751,75 @@ void PluginTest::testAuthentication()
     QCOMPARE(error["message"].toString(), QString("Invalid AccountService"));
     authenticationError.clear();
 
+    delete manager;
+    delete qmlObject;
+}
+
+void PluginTest::testAuthenticationCancel()
+{
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Account *account1 = manager->createAccount("cool");
+    QVERIFY(account1 != 0);
+
+    account1->setEnabled(true);
+    account1->setDisplayName("CoolAccount");
+    account1->selectService(coolMail);
+    account1->setEnabled(true);
+    account1->syncAndBlock();
+
+    AccountService *accountService1 = new AccountService(account1, coolMail);
+    QVERIFY(accountService1 != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("accountService1", accountService1);
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountService { objectHandle: accountService1 }",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QSignalSpy authenticated(qmlObject,
+                             SIGNAL(authenticated(const QVariantMap &)));
+    QSignalSpy authenticationError(qmlObject,
+        SIGNAL(authenticationError(const QVariantMap &)));
+
+    /* First, check that calling cancelAuthentication() on an idle object
+     * doesn't do anything. */
+    bool ok = QMetaObject::invokeMethod(qmlObject, "cancelAuthentication");
+    QVERIFY(ok);
+
+    QTest::qWait(50);
+    QCOMPARE(authenticated.count(), 0);
+    QCOMPARE(authenticationError.count(), 0);
+
+    /* Now, try canceling a session. */
+    QVariantMap sessionData;
+    sessionData.insert("test", QString("OK"));
+    QMetaObject::invokeMethod(qmlObject, "authenticate",
+                              Q_ARG(QVariantMap, sessionData));
+    QTest::qWait(2);
+    QCOMPARE(authenticated.count(), 0);
+    QCOMPARE(authenticationError.count(), 0);
+
+    ok = QMetaObject::invokeMethod(qmlObject, "cancelAuthentication");
+    QVERIFY(ok);
+
+    QTest::qWait(50);
+    QCOMPARE(authenticated.count(), 0);
+    QCOMPARE(authenticationError.count(), 1);
+    QVariantMap error = authenticationError.at(0).at(0).toMap();
+    QVERIFY(!error.isEmpty());
+    /* 311 is the value of SignOn::Error::SessionCanceled; we prefer avoiding
+     * #including any headers from libsignon from within this file. */
+    QCOMPARE(error["code"].toInt(), 311);
+    authenticationError.clear();
+
+    delete accountService1;
     delete manager;
     delete qmlObject;
 }
