@@ -51,29 +51,22 @@ HEADERS += \
 
 DEFINES += API_URI=\\\"$${API_URI}\\\"
 
-QMLDIR_FILES += qmldir
-QMAKE_SUBSTITUTES += qmldir.in
+qmldir_gen.input = qmldir.in
+qmldir_gen.output = $${DESTDIR}/qmldir
+QMAKE_SUBSTITUTES += qmldir_gen
 OTHER_FILES += qmldir.in
-
-copy2build.output = $${DESTDIR}/${QMAKE_FILE_IN}
-copy2build.input = QMLDIR_FILES
-copy2build.commands = $$QMAKE_COPY ${QMAKE_FILE_IN} ${QMAKE_FILE_OUT}
-copy2build.name = COPY ${QMAKE_FILE_IN}
-copy2build.variable_out = PRE_TARGETDEPS
-copy2build.CONFIG += no_link
-QMAKE_EXTRA_COMPILERS += copy2build
 
 PLUGIN_INSTALL_BASE = $$[QT_INSTALL_QML]/$$replace(API_URI, \\., /)
 target.path = $${PLUGIN_INSTALL_BASE}
 INSTALLS += target
 
-qmldir.files = qmldir
+qmldir.files = $${DESTDIR}/qmldir
 qmldir.path = $${PLUGIN_INSTALL_BASE}
 INSTALLS += qmldir
 
 generateQmlTypes.output = $${DESTDIR}/plugin.qmltypes
 generateQmlTypes.input = QML_PLUGINS
-generateQmlTypes.commands = export LD_PRELOAD=${QMAKE_FILE_IN}; $$[QT_INSTALL_BINS]/qmlplugindump -notrelocatable $${API_URI} 0.1 .. > ${QMAKE_FILE_OUT}
+generateQmlTypes.commands = export LD_PRELOAD=${QMAKE_FILE_IN}; $$[QT_INSTALL_BINS]/qmlplugindump -notrelocatable $${API_URI} 0.1 . > ${QMAKE_FILE_OUT}
 generateQmlTypes.name = Generate ${QMAKE_FILE_OUT}
 generateQmlTypes.CONFIG += no_link
 generateQmlTypes.variable_out = QML_TYPES
