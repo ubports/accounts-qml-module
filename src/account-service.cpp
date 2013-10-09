@@ -413,6 +413,22 @@ void AccountService::authenticate(const QVariantMap &sessionData)
 }
 
 /*!
+ * \qmlmethod void AccountService::cancelAuthentication()
+ *
+ * Cancel an ongoing authentication on this account. This method does nothing
+ * if there isn't any authentication process going on.
+ *
+ * \sa authenticate
+ */
+void AccountService::cancelAuthentication()
+{
+    DEBUG();
+    if (authSession != 0) {
+        authSession->cancel();
+    }
+}
+
+/*!
  * \qmlsignal AccountService::authenticated(jsobject reply)
  *
  * Emitted when the authentication has been successfully completed. The \a
