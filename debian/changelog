@@ -1,3 +1,11 @@
+accounts-qml-module (0.2-0ubuntu1) UNRELEASED; urgency=low
+
+  * New upstream release
+    - Add a cancelAuthentication() method to AccountService (LP: #1231680)
+    - Install a typeinfo file for QtCreator
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Wed, 09 Oct 2013 10:19:41 +0300
+
 accounts-qml-module (0.1+13.10.20130626-0ubuntu1) saucy; urgency=low
 
   [ Alberto Mardegan ]
