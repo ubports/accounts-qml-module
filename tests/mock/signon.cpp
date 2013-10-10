@@ -289,6 +289,12 @@ void AuthSession::process(const SessionData &sessionData,
     responseTimer.start();
 }
 
+void AuthSession::cancel()
+{
+    m_sessionData.insert("errorCode", Error::SessionCanceled);
+    m_sessionData.insert("errorMessage", QStringLiteral("Session canceled"));
+}
+
 void AuthSession::respond()
 {
     if (m_sessionData.contains("errorCode")) {
