@@ -445,6 +445,8 @@ void PluginTest::testProviderModel()
         QCOMPARE(get(model, i, "displayName").toString(), providers[i].displayName());
         QCOMPARE(get(model, i, "providerId").toString(), providers[i].name());
         QCOMPARE(get(model, i, "iconName").toString(), providers[i].iconName());
+        QCOMPARE(get(model, i, "isSingleAccount").toBool(),
+                 providers[i].isSingleAccount());
     }
 
     QCOMPARE(get(model, 100, "iconName"), QVariant());

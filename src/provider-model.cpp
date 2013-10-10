@@ -39,6 +39,7 @@ using namespace OnlineAccounts;
  * \li \c displayName
  * \li \c providerId is the unique identifier of the account provider
  * \li \c iconName
+ * \li \c isSingleAccount
  * \endlist
  */
 
@@ -93,6 +94,9 @@ QVariant ProviderModel::data(const QModelIndex &index, int role) const
     case IconNameRole:
         ret = provider.iconName();
         break;
+    case IsSingleAccountRole:
+        ret = provider.isSingleAccount();
+        break;
     }
 
     return ret;
@@ -105,6 +109,7 @@ QHash<int, QByteArray> ProviderModel::roleNames() const
         roles[Qt::DisplayRole] = "displayName";
         roles[ProviderIdRole] = "providerId";
         roles[IconNameRole] = "iconName";
+        roles[IsSingleAccountRole] = "isSingleAccount";
     }
     return roles;
 }
