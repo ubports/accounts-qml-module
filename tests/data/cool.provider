@@ -2,4 +2,5 @@
 <provider id="cool">
   <name>Cool provider</name>
   <icon>general_myprovider</icon>
+  <single-account>true</single-account>
 </provider>
