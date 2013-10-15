@@ -41,6 +41,7 @@ private Q_SLOTS:
     void testLoadPlugin();
     void testModel();
     void testModelSignals();
+    void testModelDisplayName();
     void testProviderModel();
     void testAccountService();
     void testAccountServiceUpdate();
@@ -417,6 +418,89 @@ void PluginTest::testModelSignals()
     QCOMPARE(rowsInserted.at(0).at(2).toInt(), 3);
     QCOMPARE(rowsRemoved.count(), 0);
     rowsInserted.clear();
+
+    delete manager;
+    delete object;
+}
+
+void PluginTest::testModelDisplayName()
+{
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Service coolShare = manager->service("coolshare");
+    Service badMail = manager->service("badmail");
+    Service badShare = manager->service("badshare");
+    Account *account1 = manager->createAccount("cool");
+    QVERIFY(account1 != 0);
+
+    account1->setEnabled(true);
+    account1->setDisplayName("CoolAccount");
+    account1->selectService(coolMail);
+    account1->setEnabled(true);
+    account1->selectService(coolShare);
+    account1->setEnabled(false);
+    account1->syncAndBlock();
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountServiceModel {\n"
+                      "  includeDisabled: true\n"
+                      "}",
+                      QUrl());
+    QObject *object = component.create();
+    QVERIFY(object != 0);
+    QAbstractListModel *model = qobject_cast<QAbstractListModel*>(object);
+    QVERIFY(model != 0);
+
+    QCOMPARE(model->property("count").toInt(), 2);
+
+    /* Create a second account */
+    Account *account2 = manager->createAccount("bad");
+    QVERIFY(account2 != 0);
+
+    account2->setEnabled(false);
+    account2->setDisplayName("BadAccount");
+    account2->selectService(badMail);
+    account2->setEnabled(true);
+    account2->selectService(badShare);
+    account2->setEnabled(false);
+    account2->syncAndBlock();
+
+    QSignalSpy countChanged(model, SIGNAL(countChanged()));
+    countChanged.wait();
+
+    QCOMPARE(model->property("count").toInt(), 4);
+
+    QCOMPARE(get(model, 0, "displayName").toString(), QString("BadAccount"));
+    QCOMPARE(get(model, 1, "displayName").toString(), QString("BadAccount"));
+    QCOMPARE(get(model, 2, "displayName").toString(), QString("CoolAccount"));
+    QCOMPARE(get(model, 3, "displayName").toString(), QString("CoolAccount"));
+
+    /* Change the displayName, and verify that the dataChanged() signal is
+     * emitted */
+    QSignalSpy dataChanged(model,
+                   SIGNAL(dataChanged(const QModelIndex&,const QModelIndex&)));
+    account1->setDisplayName("ColdAccount");
+    account1->syncAndBlock();
+    dataChanged.wait();
+
+    /* This is actually an implementation detail: instead of a single signal
+     * carrying the index range in its parameters, we currently get N separate
+     * signals. */
+    QCOMPARE(dataChanged.count(), 2);
+    QModelIndex index = qvariant_cast<QModelIndex>(dataChanged.at(0).at(0));
+    QCOMPARE(index.row(), 2);
+    index = qvariant_cast<QModelIndex>(dataChanged.at(1).at(0));
+    QCOMPARE(index.row(), 3);
+
+    QCOMPARE(get(model, 0, "displayName").toString(), QString("BadAccount"));
+    QCOMPARE(get(model, 1, "displayName").toString(), QString("BadAccount"));
+    QCOMPARE(get(model, 2, "displayName").toString(), QString("ColdAccount"));
+    QCOMPARE(get(model, 3, "displayName").toString(), QString("ColdAccount"));
 
     delete manager;
     delete object;
