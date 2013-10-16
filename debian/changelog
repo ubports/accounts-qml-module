@@ -1,3 +1,14 @@
+accounts-qml-module (0.3-0ubuntu1) UNRELEASED; urgency=low
+
+  * New upstream release
+    - AccountServiceModel: emit dataChanged for displayName
+      Fixes: http://code.google.com/p/accounts-sso/issues/detail?id=204
+    - Add isSingleAccount role to ProviderModel
+      Fixes: http://code.google.com/p/accounts-sso/issues/detail?id=202
+    - Fix generation of qmltypes file
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Tue, 15 Oct 2013 17:22:04 +0300
+
 accounts-qml-module (0.2+13.10.20131011-0ubuntu1) saucy; urgency=low
 
   [ Alberto Mardegan ]

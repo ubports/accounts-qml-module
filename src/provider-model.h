@@ -41,6 +41,7 @@ public:
     enum Roles {
         ProviderIdRole = Qt::UserRole + 1,
         IconNameRole,
+        IsSingleAccountRole,
     };
 
     Q_INVOKABLE QVariant get(int row, const QString &roleName) const;

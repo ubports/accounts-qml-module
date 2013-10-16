@@ -62,6 +62,7 @@ public:
     void queueUpdate();
     AccountServices listAccountServices(Accounts::Account *account) const;
 
+    AccountServices watchAccount(Accounts::Account *account);
     void addServicesFromAccount(Accounts::Account *account);
     void watchItems(const AccountServices &items);
     void addItems(const AccountServices &added);
@@ -72,6 +73,7 @@ public Q_SLOTS:
     void update();
     void onAccountCreated(Accounts::AccountId id);
     void onAccountRemoved(Accounts::AccountId id);
+    void onAccountDisplayNameChanged();
     void onAccountServiceEnabled(bool enabled);
 
 private:
@@ -153,11 +155,22 @@ AccountServiceModelPrivate::listAccountServices(Accounts::Account *account) cons
     return ret;
 }
 
-void
-AccountServiceModelPrivate::addServicesFromAccount(Accounts::Account *account)
+AccountServices
+AccountServiceModelPrivate::watchAccount(Accounts::Account *account)
 {
     AccountServices accountServices = listAccountServices(account);
     watchItems(accountServices);
+
+    QObject::connect(account, SIGNAL(displayNameChanged(const QString &)),
+                     this, SLOT(onAccountDisplayNameChanged()),
+                     Qt::UniqueConnection);
+    return accountServices;
+}
+
+void
+AccountServiceModelPrivate::addServicesFromAccount(Accounts::Account *account)
+{
+    AccountServices accountServices = watchAccount(account);
 
     AccountServices newModelItems;
 
@@ -313,8 +326,7 @@ void AccountServiceModelPrivate::update()
         }
     }
     foreach (Accounts::Account *account, accounts) {
-        AccountServices accountServices = listAccountServices(account);
-        watchItems(accountServices);
+        watchAccount(account);
     }
 
     AccountServices newModelItems;
@@ -362,6 +374,22 @@ void AccountServiceModelPrivate::onAccountRemoved(Accounts::AccountId id)
     foreach (Accounts::AccountService *accountService, removed) {
         allItems.removeOne(accountService);
         delete accountService;
+    }
+}
+
+void AccountServiceModelPrivate::onAccountDisplayNameChanged()
+{
+    Q_Q(AccountServiceModel);
+
+    Accounts::Account *account =
+        qobject_cast<Accounts::Account *>(sender());
+
+    for (int row = 0; row < modelItems.count(); row++) {
+        Accounts::AccountService *accountService = modelItems[row];
+        if (accountService->account() == account) {
+            QModelIndex index = q->index(row);
+            q->dataChanged(index, index);
+        }
     }
 }
 
