@@ -71,7 +71,7 @@ int ApplicationModel::rowCount(const QModelIndex &parent) const
 
 /*!
  * \qmlproperty string ApplicationModel::service
- * If set, the model will list only those accounts services for this
+ * If set, the model will list only those applications which can use this
  * specific service.
  */
 void ApplicationModel::setService(const QString &serviceId)
