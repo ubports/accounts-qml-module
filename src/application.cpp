@@ -23,15 +23,15 @@
 using namespace OnlineAccounts;
 
 /*!
- * \qmltype Account
+ * \qmltype Application
  * \inqmlmodule Ubuntu.OnlineAccounts 0.1
  * \ingroup Ubuntu
  *
- * \brief Represents an instance of an online account.
+ * \brief Represents a client application of Online Accounts.
  *
- * The Account element represents an online account. Currently, instances of
- * this object cannot be created directly, but are instantiated by the \l
- * ApplicationModel element.
+ * The Application element represents an application using online accounts.
+ * Currently, instances of this object cannot be created directly, but are
+ * instantiated by the \l ApplicationModel element.
  */
 Application::Application(const Accounts::Application &application,
                          QObject *parent):
