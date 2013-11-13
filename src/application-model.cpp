@@ -59,7 +59,7 @@ ApplicationModel::~ApplicationModel()
 {
 }
 
-/*
+/*!
  * \qmlproperty int ApplicationModel::count
  * The number of items in the model.
  */
@@ -93,7 +93,7 @@ QString ApplicationModel::service() const
     return m_service.name();
 }
 
-/*
+/*!
  * \qmlmethod variant ApplicationModel::get(int row, string roleName)
  *
  * Returns the data at \a row for the role \a roleName.
