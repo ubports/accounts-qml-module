@@ -719,7 +719,7 @@ bool AccountServiceModel::includeDisabled() const
     return d->includeDisabled;
 }
 
-/*
+/*!
  * \qmlmethod variant AccountServiceModel::get(int row, string roleName)
  *
  * Returns the data at \a row for the role \a roleName.

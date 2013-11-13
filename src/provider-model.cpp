@@ -86,7 +86,7 @@ int ProviderModel::rowCount(const QModelIndex &parent) const
     return providers.count();
 }
 
-/*
+/*!
  * \qmlmethod variant ProviderModel::get(int row, string roleName)
  *
  * Returns the data at \a row for the role \a roleName.
