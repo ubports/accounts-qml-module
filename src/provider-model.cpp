@@ -19,8 +19,10 @@
 #include "debug.h"
 #include "provider-model.h"
 
-#include <Accounts/Provider>
+#include <Accounts/Application>
 #include <Accounts/Manager>
+#include <Accounts/Provider>
+#include <Accounts/Service>
 
 using namespace OnlineAccounts;
 
@@ -45,17 +47,36 @@ using namespace OnlineAccounts;
 
 ProviderModel::ProviderModel(QObject *parent):
     QAbstractListModel(parent),
-    manager(SharedManager::instance())
+    manager(SharedManager::instance()),
+    m_componentCompleted(false)
 {
-    /* Given that the list is currently immutable, retrieve it once for all */
-    providers = manager->providerList();
 }
 
 ProviderModel::~ProviderModel()
 {
 }
 
-/*
+/*!
+ * \qmlproperty string ProviderModel::applicationId
+ * If set, the model will only show those providers which are relevant for the
+ * given \a applicationId. This means that a provider will only be shown if at
+ * least one of its services can be used by the application, as described in
+ * the application's manifest file.
+ */
+void ProviderModel::setApplicationId(const QString &applicationId)
+{
+    if (m_applicationId == applicationId) return;
+    m_applicationId = applicationId;
+    if (m_componentCompleted) update();
+    Q_EMIT applicationIdChanged();
+}
+
+QString ProviderModel::applicationId() const
+{
+    return m_applicationId;
+}
+
+/*!
  * \qmlproperty int ProviderModel::count
  * The number of items in the model.
  */
@@ -112,4 +133,48 @@ QHash<int, QByteArray> ProviderModel::roleNames() const
         roles[IsSingleAccountRole] = "isSingleAccount";
     }
     return roles;
+}
+
+void ProviderModel::classBegin()
+{
+}
+
+void ProviderModel::componentComplete()
+{
+    update();
+    m_componentCompleted = true;
+}
+
+void ProviderModel::update()
+{
+    if (m_componentCompleted) beginResetModel();
+
+    Accounts::ProviderList allProviders = manager->providerList();
+    if (m_applicationId.isEmpty()) {
+        providers = allProviders;
+    } else {
+        providers.clear();
+        /* This will be slightly simpler once
+         * http://code.google.com/p/accounts-sso/issues/detail?id=214 is fixed. */
+        Accounts::Application application = manager->application(m_applicationId);
+        Accounts::ServiceList supportedServices;
+        Q_FOREACH(const Accounts::Service &service, manager->serviceList()) {
+            if (!application.serviceUsage(service).isEmpty()) {
+                supportedServices.append(service);
+            }
+        }
+        Q_FOREACH(const Accounts::Provider &provider, allProviders) {
+            bool hasSupportedServices = false;
+            Q_FOREACH(const Accounts::Service &service, supportedServices) {
+                if (service.provider() == provider.name()) {
+                    hasSupportedServices = true;
+                    break;
+                }
+            }
+            if (hasSupportedServices) {
+                providers.append(provider);
+            }
+        }
+    }
+    if (m_componentCompleted) endResetModel();
 }
