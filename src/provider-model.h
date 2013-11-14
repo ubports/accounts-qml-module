@@ -22,6 +22,7 @@
 #include "manager.h"
 #include <QAbstractListModel>
 #include <QList>
+#include <QQmlParserStatus>
 
 namespace Accounts {
     class Provider;
@@ -29,9 +30,12 @@ namespace Accounts {
 
 namespace OnlineAccounts {
 
-class ProviderModel: public QAbstractListModel
+class ProviderModel: public QAbstractListModel, public QQmlParserStatus
 {
     Q_OBJECT
+    Q_INTERFACES(QQmlParserStatus)
+    Q_PROPERTY(QString applicationId READ applicationId \
+               WRITE setApplicationId NOTIFY applicationIdChanged)
     Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
 
 public:
@@ -44,6 +48,9 @@ public:
         IsSingleAccountRole,
     };
 
+    void setApplicationId(const QString &applicationId);
+    QString applicationId() const;
+
     Q_INVOKABLE QVariant get(int row, const QString &roleName) const;
 
     // reimplemented virtual methods
@@ -51,12 +58,21 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
     QHash<int, QByteArray> roleNames() const;
 
+    void classBegin();
+    void componentComplete();
+
 Q_SIGNALS:
+    void applicationIdChanged();
     void countChanged();
+
+private:
+    void update();
 
 private:
     QSharedPointer<Accounts::Manager> manager;
     QList<Accounts::Provider> providers;
+    QString m_applicationId;
+    bool m_componentCompleted;
 };
 
 }; // namespace

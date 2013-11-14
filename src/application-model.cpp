@@ -59,7 +59,7 @@ ApplicationModel::~ApplicationModel()
 {
 }
 
-/*
+/*!
  * \qmlproperty int ApplicationModel::count
  * The number of items in the model.
  */
@@ -71,7 +71,7 @@ int ApplicationModel::rowCount(const QModelIndex &parent) const
 
 /*!
  * \qmlproperty string ApplicationModel::service
- * If set, the model will list only those accounts services for this
+ * If set, the model will list only those applications which can use this
  * specific service.
  */
 void ApplicationModel::setService(const QString &serviceId)
@@ -93,7 +93,7 @@ QString ApplicationModel::service() const
     return m_service.name();
 }
 
-/*
+/*!
  * \qmlmethod variant ApplicationModel::get(int row, string roleName)
  *
  * Returns the data at \a row for the role \a roleName.
