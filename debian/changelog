@@ -1,3 +1,14 @@
+accounts-qml-module (0.4-0ubuntu1) UNRELEASED; urgency=low
+
+  * New upstream release
+    - ProviderModel: add filtering by application
+      This will allow clients to get the list of only those providers which
+      are relevant to them.
+    - Doc: couple of documentation fixes
+    - AccountServiceModel: share account manager when possible
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Thu, 14 Nov 2013 16:48:59 +0200
+
 accounts-qml-module (0.3+13.10.20131016.1-0ubuntu1) saucy; urgency=low
 
   [ Alberto Mardegan ]

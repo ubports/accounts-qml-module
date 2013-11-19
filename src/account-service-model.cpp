@@ -18,6 +18,7 @@
 
 #include "account-service-model.h"
 #include "debug.h"
+#include "manager.h"
 
 #include <Accounts/Account>
 #include <Accounts/AccountService>
@@ -92,7 +93,7 @@ private:
     QString providerId;
     QString serviceTypeId;
     QString serviceId;
-    Accounts::Manager *manager;
+    QSharedPointer<Accounts::Manager> manager;
     AccountServices allItems;
     AccountServices modelItems;
     bool (*sortFunction)(const Accounts::AccountService *as1,
@@ -112,7 +113,6 @@ AccountServiceModelPrivate::AccountServiceModelPrivate(AccountServiceModel *mode
     serviceChanged(false),
     includeDisabled(false),
     accountId(0),
-    manager(0),
     sortFunction(sortByProviderAndDisplayName)
 {
 }
@@ -120,8 +120,6 @@ AccountServiceModelPrivate::AccountServiceModelPrivate(AccountServiceModel *mode
 AccountServiceModelPrivate::~AccountServiceModelPrivate()
 {
     qDeleteAll(allItems);
-    delete manager;
-    manager = 0;
 }
 
 void AccountServiceModelPrivate::queueUpdate()
@@ -294,22 +292,26 @@ void AccountServiceModelPrivate::update()
     q->endRemoveRows();
 
     if (serviceTypeChanged) {
-        delete manager;
-        manager = 0;
+        if (!manager.isNull()) {
+            QObject::disconnect(manager.data(), 0, this, 0);
+            manager.clear();
+        }
     }
 
     /* Instantiate a manager, if needed. If the account property is set to a
      * valid account, we don't need a manager object. */
-    if (manager == 0 && account == 0) {
-        delete manager;
+    if (manager.isNull() && account == 0) {
         if (serviceTypeId.isEmpty()) {
-            manager = new Accounts::Manager(this);
+            manager = SharedManager::instance();
         } else {
-            manager = new Accounts::Manager(serviceTypeId, this);
+            manager = QSharedPointer<Accounts::Manager>(
+                new Accounts::Manager(serviceTypeId));
         }
-        QObject::connect(manager, SIGNAL(accountCreated(Accounts::AccountId)),
+        QObject::connect(manager.data(),
+                         SIGNAL(accountCreated(Accounts::AccountId)),
                          this, SLOT(onAccountCreated(Accounts::AccountId)));
-        QObject::connect(manager, SIGNAL(accountRemoved(Accounts::AccountId)),
+        QObject::connect(manager.data(),
+                         SIGNAL(accountRemoved(Accounts::AccountId)),
                          this, SLOT(onAccountRemoved(Accounts::AccountId)));
     }
 
@@ -717,7 +719,7 @@ bool AccountServiceModel::includeDisabled() const
     return d->includeDisabled;
 }
 
-/*
+/*!
  * \qmlmethod variant AccountServiceModel::get(int row, string roleName)
  *
  * Returns the data at \a row for the role \a roleName.

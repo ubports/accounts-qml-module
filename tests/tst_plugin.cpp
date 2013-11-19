@@ -43,6 +43,7 @@ private Q_SLOTS:
     void testModelSignals();
     void testModelDisplayName();
     void testProviderModel();
+    void testProviderModelWithApplication();
     void testAccountService();
     void testAccountServiceUpdate();
     void testAuthentication();
@@ -524,6 +525,7 @@ void PluginTest::testProviderModel()
 
     QCOMPARE(model->rowCount(), providers.count());
     QCOMPARE(model->property("count").toInt(), providers.count());
+    QCOMPARE(model->property("applicationId").toString(), QString());
 
     for (int i = 0; i < providers.count(); i++) {
         QCOMPARE(get(model, i, "displayName").toString(), providers[i].displayName());
@@ -541,6 +543,42 @@ void PluginTest::testProviderModel()
                                       Q_ARG(int, 1),
                                       Q_ARG(QString, "providerId")));
     QCOMPARE(value.toString(), providers[1].name());
+
+    delete manager;
+    delete object;
+}
+
+void PluginTest::testProviderModelWithApplication()
+{
+    /* Create some accounts */
+    Manager *manager = new Manager(this);
+    ProviderList providers = manager->providerList();
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "ProviderModel {\n"
+                      "  applicationId: \"mailer\"\n"
+                      "}",
+                      QUrl());
+    QObject *object = component.create();
+    QVERIFY(object != 0);
+    QAbstractListModel *model = qobject_cast<QAbstractListModel*>(object);
+    QVERIFY(model != 0);
+
+    QCOMPARE(model->rowCount(), providers.count());
+    QCOMPARE(model->property("count").toInt(), providers.count());
+    QCOMPARE(model->property("applicationId").toString(), QString("mailer"));
+
+    /* Now set an application which supports only "coolservice" and verify that
+     * only the "cool" provider is there */
+    model->setProperty("applicationId", QString("coolpublisher"));
+    QCOMPARE(model->property("applicationId").toString(), QString("coolpublisher"));
+    QCOMPARE(model->property("count").toInt(), 1);
+    /* Do it twice, just to improve branch coverage */
+    model->setProperty("applicationId", QString("coolpublisher"));
+
+    QCOMPARE(get(model, 0, "providerId").toString(), QString("cool"));
 
     delete manager;
     delete object;
