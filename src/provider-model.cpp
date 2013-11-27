@@ -50,6 +50,7 @@ ProviderModel::ProviderModel(QObject *parent):
     manager(SharedManager::instance()),
     m_componentCompleted(false)
 {
+    QObject::connect(this, SIGNAL(modelReset()), this, SIGNAL(countChanged()));
 }
 
 ProviderModel::~ProviderModel()
