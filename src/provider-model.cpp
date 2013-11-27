@@ -50,6 +50,7 @@ ProviderModel::ProviderModel(QObject *parent):
     manager(SharedManager::instance()),
     m_componentCompleted(false)
 {
+    QObject::connect(this, SIGNAL(modelReset()), this, SIGNAL(countChanged()));
 }
 
 ProviderModel::~ProviderModel()
@@ -147,7 +148,7 @@ void ProviderModel::componentComplete()
 
 void ProviderModel::update()
 {
-    if (m_componentCompleted) beginResetModel();
+    beginResetModel();
 
     Accounts::ProviderList allProviders = manager->providerList();
     if (m_applicationId.isEmpty()) {
@@ -176,5 +177,6 @@ void ProviderModel::update()
             }
         }
     }
-    if (m_componentCompleted) endResetModel();
+
+    endResetModel();
 }

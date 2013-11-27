@@ -572,8 +572,10 @@ void PluginTest::testProviderModelWithApplication()
 
     /* Now set an application which supports only "coolservice" and verify that
      * only the "cool" provider is there */
+    QSignalSpy countSignal(model, SIGNAL(countChanged()));
     model->setProperty("applicationId", QString("coolpublisher"));
     QCOMPARE(model->property("applicationId").toString(), QString("coolpublisher"));
+    QCOMPARE(countSignal.count(), 1);
     QCOMPARE(model->property("count").toInt(), 1);
     /* Do it twice, just to improve branch coverage */
     model->setProperty("applicationId", QString("coolpublisher"));
