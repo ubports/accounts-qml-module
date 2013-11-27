@@ -147,7 +147,7 @@ void ProviderModel::componentComplete()
 
 void ProviderModel::update()
 {
-    if (m_componentCompleted) beginResetModel();
+    beginResetModel();
 
     Accounts::ProviderList allProviders = manager->providerList();
     if (m_applicationId.isEmpty()) {
@@ -176,5 +176,6 @@ void ProviderModel::update()
             }
         }
     }
-    if (m_componentCompleted) endResetModel();
+
+    endResetModel();
 }
