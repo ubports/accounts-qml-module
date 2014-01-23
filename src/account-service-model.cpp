@@ -285,7 +285,7 @@ void AccountServiceModelPrivate::update()
     updateQueued = false;
     DEBUG();
 
-    q->beginRemoveRows(QModelIndex(), 0, modelItems.count() - 1);
+    q->beginRemoveRows(QModelIndex(), 0, qMax(0, modelItems.count() - 1));
     modelItems.clear();
     qDeleteAll(allItems);
     allItems.clear();
@@ -341,7 +341,7 @@ void AccountServiceModelPrivate::update()
         }
     }
 
-    q->beginInsertRows(QModelIndex(), 0, newModelItems.count() - 1);
+    q->beginInsertRows(QModelIndex(), 0, qMax(0, newModelItems.count() - 1));
     modelItems = newModelItems;
     sortItems();
     q->endInsertRows();
