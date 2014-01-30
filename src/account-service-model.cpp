@@ -285,11 +285,13 @@ void AccountServiceModelPrivate::update()
     updateQueued = false;
     DEBUG();
 
-    q->beginRemoveRows(QModelIndex(), 0, qMax(0, modelItems.count() - 1));
-    modelItems.clear();
+    if (!modelItems.isEmpty()) {
+        q->beginRemoveRows(QModelIndex(), 0, modelItems.count() - 1);
+        modelItems.clear();
+        q->endRemoveRows();
+    }
     qDeleteAll(allItems);
     allItems.clear();
-    q->endRemoveRows();
 
     if (serviceTypeChanged) {
         if (!manager.isNull()) {
@@ -341,10 +343,12 @@ void AccountServiceModelPrivate::update()
         }
     }
 
-    q->beginInsertRows(QModelIndex(), 0, qMax(0, newModelItems.count() - 1));
-    modelItems = newModelItems;
-    sortItems();
-    q->endInsertRows();
+    if (!newModelItems.isEmpty()) {
+        q->beginInsertRows(QModelIndex(), 0, newModelItems.count() - 1);
+        modelItems = newModelItems;
+        sortItems();
+        q->endInsertRows();
+    }
 
     accountIdChanged = false;
     providerChanged = false;
