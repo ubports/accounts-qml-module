@@ -39,6 +39,7 @@ public:
 private Q_SLOTS:
     void initTestCase();
     void testLoadPlugin();
+    void testEmptyModel();
     void testModel();
     void testModelSignals();
     void testModelDisplayName();
@@ -106,6 +107,56 @@ void PluginTest::testLoadPlugin()
                       QUrl());
     QObject *object = component.create();
     QVERIFY(object != 0);
+    delete object;
+}
+
+void PluginTest::testEmptyModel()
+{
+    clearDb();
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountServiceModel {}",
+                      QUrl());
+    QObject *object = component.create();
+    QVERIFY(object != 0);
+    QAbstractListModel *model = qobject_cast<QAbstractListModel*>(object);
+    QVERIFY(model != 0);
+
+    QCOMPARE(model->rowCount(), 0);
+
+    /* We'll now add some accounts but set the service type filter so that they
+     * should not appear in the model. */
+    model->setProperty("serviceType", QString("e-mail"));
+    QCOMPARE(model->property("serviceType").toString(), QString("e-mail"));
+
+    /* Create some disabled accounts */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Service badMail = manager->service("badmail");
+    Account *account1 = manager->createAccount("cool");
+    QVERIFY(account1 != 0);
+
+    account1->setEnabled(false);
+    account1->setDisplayName("CoolAccount");
+    account1->selectService(coolMail);
+    account1->setEnabled(true);
+    account1->syncAndBlock();
+
+    Account *account2 = manager->createAccount("bad");
+    QVERIFY(account2 != 0);
+
+    account2->setEnabled(true);
+    account2->setDisplayName("BadAccount");
+    account2->selectService(badMail);
+    account2->setEnabled(false);
+    account2->syncAndBlock();
+
+    QTest::qWait(10);
+    QCOMPARE(model->rowCount(), 0);
+
+    delete manager;
     delete object;
 }
 
