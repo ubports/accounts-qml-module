@@ -1,3 +1,24 @@
+accounts-qml-module (0.4+14.04.20140305-0ubuntu1) trusty; urgency=low
+
+  [ CI bot ]
+  * No change rebuild against Qt 5.2.1.
+
+  [ Albert Astals Cid ]
+  * Merge from upstream Do not pass negative ranges to model calls. (LP:
+    #1231697, #1271039, #1255343)
+
+  [ Alberto Mardegan ]
+  * Merge from upstream Do not pass negative ranges to model calls. (LP:
+    #1231697, #1271039, #1255343)
+  * Merge from upstream Fix a regression introduced with latest fix,
+    where empty models wrongly emit the rowsInserted signal. (LP:
+    #1231697, #1271039, #1255343)
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 05 Mar 2014 09:15:03 +0000
+
 accounts-qml-module (0.4+14.04.20131127-0ubuntu1) trusty; urgency=low
 
   [ Alberto Mardegan ]
