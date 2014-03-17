@@ -1,3 +1,11 @@
+accounts-qml-module (0.4+14.04.20140317-0ubuntu1) trusty; urgency=low
+
+  [ Colin Watson ]
+  * Switch back to Architecture: any, as qtdeclarative now supports all
+    architectures.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 17 Mar 2014 16:41:49 +0000
+
 accounts-qml-module (0.4+14.04.20140305-0ubuntu1) trusty; urgency=low
 
   [ CI bot ]
