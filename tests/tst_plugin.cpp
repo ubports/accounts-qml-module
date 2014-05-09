@@ -261,6 +261,21 @@ void PluginTest::testModel()
     QCOMPARE(model->property("account").value<QObject*>(), account2);
     model->setProperty("account", QVariant::fromValue<QObject*>(0));
 
+    /* Test the application filter */
+    model->setProperty("applicationId", QString("mailer"));
+    QCOMPARE(model->property("applicationId").toString(), QString("mailer"));
+    QTest::qWait(10);
+    QCOMPARE(model->rowCount(), 2);
+    QSet<QString> services;
+    services.insert(get(model, 0, "serviceName").toString());
+    services.insert(get(model, 1, "serviceName").toString());
+    QSet<QString> expectedServices;
+    expectedServices.insert("Cool Mail");
+    expectedServices.insert("Bad Mail");
+    QCOMPARE(services, expectedServices);
+    /* Reset the application filter */
+    model->setProperty("applicationId", QString());
+
     /* Test the provider filter */
     model->setProperty("provider", QString("bad"));
     QCOMPARE(model->property("provider").toString(), QString("bad"));
