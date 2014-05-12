@@ -38,6 +38,8 @@ class AccountServiceModel: public QAbstractListModel, public QQmlParserStatus
                NOTIFY accountIdChanged)
     Q_PROPERTY(QObject *account READ account WRITE setAccount \
                NOTIFY accountChanged)
+    Q_PROPERTY(QString applicationId READ applicationId \
+               WRITE setApplicationId NOTIFY applicationIdChanged)
     Q_PROPERTY(QString provider READ provider WRITE setProvider \
                NOTIFY providerChanged)
     Q_PROPERTY(QString serviceType READ serviceType WRITE setServiceType \
@@ -70,6 +72,9 @@ public:
     void setAccount(QObject *account);
     QObject *account() const;
 
+    void setApplicationId(const QString &applicationId);
+    QString applicationId() const;
+
     void setProvider(const QString &providerId);
     QString provider() const;
 
@@ -94,6 +99,7 @@ Q_SIGNALS:
     void includeDisabledChanged();
     void accountIdChanged();
     void accountChanged();
+    void applicationIdChanged();
     void providerChanged();
     void serviceTypeChanged();
     void serviceChanged();

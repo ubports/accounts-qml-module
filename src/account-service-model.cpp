@@ -22,6 +22,7 @@
 
 #include <Accounts/Account>
 #include <Accounts/AccountService>
+#include <Accounts/Application>
 #include <Accounts/Manager>
 #include <QPointer>
 
@@ -84,12 +85,14 @@ private:
     bool updateQueued;
     bool accountIdChanged;
     bool accountChanged;
+    bool applicationIdChanged;
     bool providerChanged;
     bool serviceTypeChanged;
     bool serviceChanged;
     bool includeDisabled;
     Accounts::AccountId accountId;
     QPointer<Accounts::Account> account;
+    Accounts::Application application;
     QString providerId;
     QString serviceTypeId;
     QString serviceId;
@@ -146,6 +149,8 @@ AccountServiceModelPrivate::listAccountServices(Accounts::Account *account) cons
     } else {
         foreach (Accounts::Service service, account->services()) {
             if (!serviceId.isEmpty() && service.name() != serviceId) continue;
+            if (application.isValid() &&
+                application.serviceUsage(service).isEmpty()) continue;
             ret.append(new Accounts::AccountService(account, service));
         }
     }
@@ -631,6 +636,34 @@ QObject *AccountServiceModel::account() const
 {
     Q_D(const AccountServiceModel);
     return d->account;
+}
+
+/*!
+ * \qmlproperty string AccountServiceModel::applicationId
+ * If set, the model will only show those account services which are relevant
+ * for the given \a applicationId. This means that an account service will only
+ * be shown if it can be used by the application, as described in the
+ * application's manifest file.
+ */
+void AccountServiceModel::setApplicationId(const QString &applicationId)
+{
+    Q_D(AccountServiceModel);
+
+    if (applicationId == d->application.name()) return;
+    if (applicationId.isEmpty()) {
+        d->application = Accounts::Application();
+    } else {
+        d->application = SharedManager::instance()->application(applicationId);
+    }
+    d->applicationIdChanged = true;
+    d->queueUpdate();
+    Q_EMIT applicationIdChanged();
+}
+
+QString AccountServiceModel::applicationId() const
+{
+    Q_D(const AccountServiceModel);
+    return d->application.name();
 }
 
 /*!
