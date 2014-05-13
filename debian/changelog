@@ -1,3 +1,9 @@
+accounts-qml-module (0.4+14.04.20140512-0ubuntu1) UNRELEASED; urgency=medium
+
+  * Merge from upstream: add filter on application to AccountServiceModel.
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Mon, 12 May 2014 10:58:53 +0300
+
 accounts-qml-module (0.4+14.04.20140317-0ubuntu1) trusty; urgency=low
 
   [ Colin Watson ]
