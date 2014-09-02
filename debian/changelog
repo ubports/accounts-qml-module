@@ -1,3 +1,9 @@
+accounts-qml-module (0.4+14.10.20140528-0ubuntu2) utopic; urgency=low
+
+  * add "Multi-Arch: same" to qtdeclarative5-accounts-plugin
+
+ -- Michael Vogt <michael.vogt@ubuntu.com>  Tue, 02 Sep 2014 10:57:59 +0200
+
 accounts-qml-module (0.4+14.10.20140528-0ubuntu1) utopic; urgency=low
 
   * New rebuild forced
