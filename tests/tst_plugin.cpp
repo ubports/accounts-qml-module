@@ -698,6 +698,7 @@ void PluginTest::testAccountService()
     QCOMPARE(provider["id"].toString(), QString("cool"));
     QCOMPARE(provider["displayName"].toString(), QString("Cool provider"));
     QCOMPARE(provider["iconName"].toString(), QString("general_myprovider"));
+    QCOMPARE(provider["isSingleAccount"].toBool(), true);
 
     QVariantMap service = qmlObject->property("service").toMap();
     QVERIFY(!service.isEmpty());
