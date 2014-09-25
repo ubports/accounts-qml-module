@@ -599,6 +599,8 @@ void PluginTest::testProviderModel()
         QCOMPARE(get(model, i, "iconName").toString(), providers[i].iconName());
         QCOMPARE(get(model, i, "isSingleAccount").toBool(),
                  providers[i].isSingleAccount());
+        QCOMPARE(get(model, i, "translations").toString(),
+                 providers[i].trCatalog());
     }
 
     QCOMPARE(get(model, 100, "iconName"), QVariant());
@@ -699,6 +701,7 @@ void PluginTest::testAccountService()
     QCOMPARE(provider["displayName"].toString(), QString("Cool provider"));
     QCOMPARE(provider["iconName"].toString(), QString("general_myprovider"));
     QCOMPARE(provider["isSingleAccount"].toBool(), true);
+    QCOMPARE(provider["translations"].toString(), QString("somewhere"));
 
     QVariantMap service = qmlObject->property("service").toMap();
     QVERIFY(!service.isEmpty());
@@ -706,6 +709,7 @@ void PluginTest::testAccountService()
     QCOMPARE(service["displayName"].toString(), QString("Cool Mail"));
     QCOMPARE(service["iconName"].toString(), QString("general_myservice"));
     QCOMPARE(service["serviceTypeId"].toString(), QString("e-mail"));
+    QCOMPARE(service["translations"].toString(), QString("here"));
 
     QVariantMap settings = qmlObject->property("settings").toMap();
     QVERIFY(!settings.isEmpty());

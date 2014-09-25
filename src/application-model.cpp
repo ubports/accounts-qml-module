@@ -46,6 +46,8 @@ using namespace OnlineAccounts;
  *     service; this is set to a valid value only if the \l
  *     ApplicationModel::service property is set to a valid service ID.
  * \li \c application is the Application object
+ * \li \c translations, the localization domain for translating the
+ * \c serviceUsage field
  * \endlist
  */
 
@@ -129,6 +131,9 @@ QVariant ApplicationModel::data(const QModelIndex &index, int role) const
     case ApplicationRole:
         ret = QVariant::fromValue<QObject*>(application);
         break;
+    case TranslationsRole:
+        ret = application->trCatalog();
+        break;
     }
 
     return ret;
@@ -143,6 +148,7 @@ QHash<int, QByteArray> ApplicationModel::roleNames() const
         roles[IconNameRole] = "iconName";
         roles[ServiceUsageRole] = "serviceUsage";
         roles[ApplicationRole] = "application";
+        roles[TranslationsRole] = "translations";
     }
     return roles;
 }

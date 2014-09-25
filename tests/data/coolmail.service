@@ -4,6 +4,7 @@
   <name>Cool Mail</name>
   <icon>general_myservice</icon>
   <provider>cool</provider>
+  <translations>here</translations>
 
   <template>
     <group name="auth">
