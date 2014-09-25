@@ -43,6 +43,8 @@ using namespace OnlineAccounts;
  * \li \c iconName, the name of the icon representing this provider
  * \li \c isSingleAccount, \a true if this provider supports creating one
  * account at most
+ * \li \c translations, the localization domain for translating the provider's
+ * display name
  * \endlist
  */
 
@@ -120,6 +122,9 @@ QVariant ProviderModel::data(const QModelIndex &index, int role) const
     case IsSingleAccountRole:
         ret = provider.isSingleAccount();
         break;
+    case TranslationsRole:
+        ret = provider.trCatalog();
+        break;
     }
 
     return ret;
@@ -133,6 +138,7 @@ QHash<int, QByteArray> ProviderModel::roleNames() const
         roles[ProviderIdRole] = "providerId";
         roles[IconNameRole] = "iconName";
         roles[IsSingleAccountRole] = "isSingleAccount";
+        roles[TranslationsRole] = "translations";
     }
     return roles;
 }

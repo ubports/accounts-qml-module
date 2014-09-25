@@ -162,6 +162,8 @@ bool AccountService::serviceEnabled() const
  * \li \c iconName
  * \li \c isSingleAccount, \a true if this provider supports creating one
  * account at most
+ * \li \c translations, the localization domain for translating the provider's
+ * display name
  * \endlist
  */
 QVariantMap AccountService::provider() const
@@ -177,6 +179,7 @@ QVariantMap AccountService::provider() const
     map.insert("displayName", provider.displayName());
     map.insert("iconName", provider.iconName());
     map.insert("isSingleAccount", provider.isSingleAccount());
+    map.insert("translations", provider.trCatalog());
     return map;
 }
 
@@ -190,6 +193,8 @@ QVariantMap AccountService::provider() const
  * \li \c displayName
  * \li \c iconName
  * \li \c serviceTypeId identifies the provided service type
+ * \li \c translations, the localization domain for translating the provider's
+ * display name
  * \endlist
  */
 QVariantMap AccountService::service() const
@@ -202,6 +207,7 @@ QVariantMap AccountService::service() const
     map.insert("displayName", service.displayName());
     map.insert("iconName", service.iconName());
     map.insert("serviceTypeId", service.serviceType());
+    map.insert("translations", service.trCatalog());
     return map;
 }
 

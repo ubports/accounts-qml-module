@@ -46,6 +46,7 @@ public:
         ProviderIdRole = Qt::UserRole + 1,
         IconNameRole,
         IsSingleAccountRole,
+        TranslationsRole,
     };
 
     void setApplicationId(const QString &applicationId);
