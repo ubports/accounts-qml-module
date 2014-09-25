@@ -160,6 +160,8 @@ bool AccountService::serviceEnabled() const
  * \li \c id is the unique identifier for this provider
  * \li \c displayName
  * \li \c iconName
+ * \li \c isSingleAccount, \a true if this provider supports creating one
+ * account at most
  * \endlist
  */
 QVariantMap AccountService::provider() const
@@ -174,6 +176,7 @@ QVariantMap AccountService::provider() const
     map.insert("id", provider.name());
     map.insert("displayName", provider.displayName());
     map.insert("iconName", provider.iconName());
+    map.insert("isSingleAccount", provider.isSingleAccount());
     return map;
 }
 

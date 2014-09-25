@@ -38,10 +38,11 @@ using namespace OnlineAccounts;
  *
  * The model defines the following roles:
  * \list
- * \li \c displayName
- * \li \c providerId is the unique identifier of the account provider
- * \li \c iconName
- * \li \c isSingleAccount
+ * \li \c displayName, the user-visible name of this provider
+ * \li \c providerId, the unique identifier of the account provider
+ * \li \c iconName, the name of the icon representing this provider
+ * \li \c isSingleAccount, \a true if this provider supports creating one
+ * account at most
  * \endlist
  */
 
