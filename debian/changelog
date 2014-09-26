@@ -1,3 +1,12 @@
+accounts-qml-module (0.5-0ubuntu1) UNRELEASED; urgency=medium
+
+  * New upstream release
+    - Add translation information
+    - Add isSingleAccount field to provider map
+    - AccountServiceModel: add filter on application
+
+ -- mardy <mardy@Dev>  Fri, 26 Sep 2014 14:42:46 +0300
+
 accounts-qml-module (0.4+14.10.20140528-0ubuntu2) utopic; urgency=low
 
   * add "Multi-Arch: same" to qtdeclarative5-accounts-plugin
