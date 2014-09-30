@@ -21,6 +21,7 @@
 #include "application.h"
 
 #include <Accounts/Manager>
+#include <QQmlEngine>
 
 using namespace OnlineAccounts;
 
@@ -129,6 +130,7 @@ QVariant ApplicationModel::data(const QModelIndex &index, int role) const
         ret = application->serviceUsage(m_service);
         break;
     case ApplicationRole:
+        QQmlEngine::setObjectOwnership(application, QQmlEngine::CppOwnership);
         ret = QVariant::fromValue<QObject*>(application);
         break;
     case TranslationsRole:
