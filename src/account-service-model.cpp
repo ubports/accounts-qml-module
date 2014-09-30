@@ -581,6 +581,7 @@ AccountServiceModel::AccountServiceModel(QObject *parent):
 
 AccountServiceModel::~AccountServiceModel()
 {
+    delete d_ptr;
 }
 
 void AccountServiceModel::classBegin()
