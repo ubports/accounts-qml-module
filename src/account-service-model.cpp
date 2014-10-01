@@ -25,6 +25,7 @@
 #include <Accounts/Application>
 #include <Accounts/Manager>
 #include <QPointer>
+#include <QQmlEngine>
 
 using namespace OnlineAccounts;
 
@@ -580,6 +581,7 @@ AccountServiceModel::AccountServiceModel(QObject *parent):
 
 AccountServiceModel::~AccountServiceModel()
 {
+    delete d_ptr;
 }
 
 void AccountServiceModel::classBegin()
@@ -782,6 +784,7 @@ QVariant AccountServiceModel::data(const QModelIndex &index, int role) const
 
     Accounts::AccountService *accountService = d->modelItems.at(index.row());
     QVariant ret;
+    QObject *object = 0;
 
     switch (role) {
     case Qt::DisplayRole:
@@ -808,7 +811,7 @@ QVariant AccountServiceModel::data(const QModelIndex &index, int role) const
     case AccountServiceRole:
         qWarning("accountService role is deprecated, use accountServiceHandle");
     case AccountServiceHandleRole:
-        ret = QVariant::fromValue<QObject*>(accountService);
+        object = accountService;
         break;
     case AccountIdRole:
         ret = accountService->account()->id();
@@ -816,10 +819,14 @@ QVariant AccountServiceModel::data(const QModelIndex &index, int role) const
     case AccountRole:
         qWarning("account role is deprecated, use accountHandle");
     case AccountHandleRole:
-        ret = QVariant::fromValue<QObject*>(accountService->account());
+        object = accountService->account();
         break;
     }
 
+    if (object) {
+        QQmlEngine::setObjectOwnership(object, QQmlEngine::CppOwnership);
+        ret = QVariant::fromValue<QObject*>(object);
+    }
     return ret;
 }
 
