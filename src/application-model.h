@@ -46,6 +46,7 @@ public:
         IconNameRole,
         ServiceUsageRole,
         ApplicationRole,
+        TranslationsRole,
     };
 
     void setService(const QString &serviceId);
