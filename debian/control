@@ -41,7 +41,7 @@ Description: transitional dummy package for Online Accounts QML clients
  This module provides access to the Online Accounts framework from QML
  applications.
 
-Package: qml-module-ubuntu-onlineaccounts-doc
+Package: accounts-qml-module-doc
 Section: doc
 Architecture: all
 Multi-Arch: foreign
