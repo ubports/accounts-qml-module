@@ -29,6 +29,26 @@
 
 using namespace Accounts;
 
+static bool mapIsSubset(const QVariantMap &set, const QVariantMap &test)
+{
+    QMapIterator<QString, QVariant> it(set);
+    while (it.hasNext()) {
+        it.next();
+        if (QMetaType::Type(it.value().type()) == QMetaType::QVariantMap) {
+            if (!mapIsSubset(it.value().toMap(),
+                             test.value(it.key()).toMap())) {
+                return false;
+            }
+        } else if (test.value(it.key()) != it.value()) {
+            qDebug() << "Maps differ: expected" << it.value() <<
+                "but found" << test.value(it.key());
+            return false;
+        }
+    }
+
+    return true;
+}
+
 class PluginTest: public QObject
 {
     Q_OBJECT
@@ -47,7 +67,9 @@ private Q_SLOTS:
     void testProviderModelWithApplication();
     void testAccountService();
     void testAccountServiceUpdate();
+    void testAuthentication_data();
     void testAuthentication();
+    void testAuthenticationDeleted();
     void testAuthenticationCancel();
     void testAuthenticationWithCredentials();
     void testManagerCreate();
@@ -863,7 +885,102 @@ void PluginTest::testAccountServiceUpdate()
     delete qmlObject;
 }
 
+void PluginTest::testAuthentication_data()
+{
+    QTest::addColumn<QString>("params");
+    QTest::addColumn<bool>("expectedSuccess");
+    QTest::addColumn<QVariantMap>("expectedReply");
+    QTest::addColumn<QVariantMap>("expectedError");
+
+    QVariantMap reply;
+    QVariantMap error;
+
+    reply.insert("test", QString("OK"));
+    reply.insert("host", QString("coolmail.ex"));
+    QTest::newRow("success with params") <<
+        "{ \"test\": \"OK\" }" <<
+        true << reply << error;
+    reply.clear();
+
+    reply.insert("host", QString("coolmail.ex"));
+    QTest::newRow("success without params") <<
+        "" <<
+        true << reply << error;
+    reply.clear();
+
+    error.insert("code", 123);
+    error.insert("message", QString("Failed!"));
+    QTest::newRow("error") <<
+        "{ \"errorCode\": 123, \"errorMessage\": \"Failed!\" }" <<
+        false << reply << error;
+    error.clear();
+}
+
 void PluginTest::testAuthentication()
+{
+    QFETCH(QString, params);
+    QFETCH(bool, expectedSuccess);
+    QFETCH(QVariantMap, expectedReply);
+    QFETCH(QVariantMap, expectedError);
+
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Service coolShare = manager->service("coolshare");
+    Account *account1 = manager->createAccount("cool");
+    QVERIFY(account1 != 0);
+
+    account1->setEnabled(true);
+    account1->setDisplayName("CoolAccount");
+    account1->selectService(coolMail);
+    account1->setEnabled(true);
+    account1->selectService(coolShare);
+    account1->setEnabled(false);
+    account1->syncAndBlock();
+
+    AccountService *accountService1 = new AccountService(account1, coolMail);
+    QVERIFY(accountService1 != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("accountService1", accountService1);
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountService {\n"
+                      "  objectHandle: accountService1\n"
+                      "  function go() {\n"
+                      "    authenticate(" + params.toUtf8() + ")\n"
+                      "  }\n"
+                      "}",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QSignalSpy authenticated(qmlObject,
+                             SIGNAL(authenticated(const QVariantMap &)));
+    QSignalSpy authenticationError(qmlObject,
+        SIGNAL(authenticationError(const QVariantMap &)));
+
+    QMetaObject::invokeMethod(qmlObject, "go");
+
+    QTRY_COMPARE(authenticationError.count(), expectedSuccess ? 0 :  1);
+    QTRY_COMPARE(authenticated.count(), expectedSuccess ? 1 : 0);
+    if (expectedSuccess) {
+        QVariantMap reply = authenticated.at(0).at(0).toMap();
+        QVERIFY(mapIsSubset(expectedReply, reply));
+    } else {
+        QVariantMap error = authenticationError.at(0).at(0).toMap();
+        qDebug() << error;
+        QVERIFY(mapIsSubset(expectedError, error));
+    }
+
+    delete accountService1;
+    delete manager;
+    delete qmlObject;
+}
+
+void PluginTest::testAuthenticationDeleted()
 {
     clearDb();
 
@@ -900,33 +1017,7 @@ void PluginTest::testAuthentication()
         SIGNAL(authenticationError(const QVariantMap &)));
 
     QVariantMap sessionData;
-    sessionData.insert("test", QString("OK"));
-    QMetaObject::invokeMethod(qmlObject, "authenticate",
-                              Q_ARG(QVariantMap, sessionData));
-    QTest::qWait(50);
-
-    QCOMPARE(authenticationError.count(), 0);
-    QCOMPARE(authenticated.count(), 1);
-    QVariantMap reply = authenticated.at(0).at(0).toMap();
-    QVERIFY(!reply.isEmpty());
-    QCOMPARE(reply["test"].toString(), QString("OK"));
-    QCOMPARE(reply["host"].toString(), QString("coolmail.ex"));
-    authenticated.clear();
-
-    /* Test an authentication failure */
-    sessionData.insert("errorCode", 123);
-    sessionData.insert("errorMessage", QString("Failed!"));
-    QMetaObject::invokeMethod(qmlObject, "authenticate",
-                              Q_ARG(QVariantMap, sessionData));
-    QTest::qWait(50);
-
-    QCOMPARE(authenticationError.count(), 1);
-    QCOMPARE(authenticated.count(), 0);
-    QVariantMap error = authenticationError.at(0).at(0).toMap();
-    QVERIFY(!error.isEmpty());
-    QCOMPARE(error["code"].toInt(), 123);
-    QCOMPARE(error["message"].toString(), QString("Failed!"));
-    authenticationError.clear();
+    QVariantMap error;
 
     /* Delete the account service, and check that the QML object survives */
     delete accountService1;
