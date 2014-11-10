@@ -1,3 +1,13 @@
+accounts-qml-module (0.5+15.04.20141110-0ubuntu1) vivid; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Alberto Mardegan ]
+  * Rename QML module (LP: #1342031)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 10 Nov 2014 09:49:57 +0000
+
 accounts-qml-module (0.5+14.10.20141006-0ubuntu1) utopic; urgency=medium
 
   [ mardy ]
