@@ -1,3 +1,11 @@
+accounts-qml-module (0.5+15.04.20141110-0ubuntu2) UNRELEASED; urgency=medium
+
+  * Merge from upstream:
+    - Make the authentication() parameter optional
+    - Add manifest-files.qdoc to the documentation (LP: #1429038) 
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Wed, 01 Apr 2015 16:16:08 +0300
+
 accounts-qml-module (0.5+15.04.20141110-0ubuntu1) vivid; urgency=low
 
   [ Ubuntu daily release ]
