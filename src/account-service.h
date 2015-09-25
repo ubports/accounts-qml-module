@@ -42,6 +42,7 @@ class AccountService: public QObject, public QQmlParserStatus
 {
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)
+    Q_ENUMS(ErrorCode)
     Q_PROPERTY(QObject *objectHandle READ objectHandle \
                WRITE setObjectHandle NOTIFY objectHandleChanged)
     Q_PROPERTY(bool enabled READ enabled NOTIFY enabledChanged)
@@ -58,6 +59,16 @@ class AccountService: public QObject, public QQmlParserStatus
                NOTIFY credentialsChanged)
 
 public:
+    enum ErrorCode {
+        NoError = 0,
+        NoAccountError,
+        UserCanceledError,
+        PermissionDeniedError,
+        NetworkError,
+        SslError,
+        InteractionRequiredError,
+    };
+
     AccountService(QObject *parent = 0);
     ~AccountService();
 
