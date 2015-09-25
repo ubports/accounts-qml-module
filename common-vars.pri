@@ -14,6 +14,6 @@ PROJECT_NAME = accounts-qml-module
 # Project version
 # remember to update debian/* files if you changes this
 #-----------------------------------------------------------------------------
-PROJECT_VERSION = 0.5
+PROJECT_VERSION = 0.6
 
 # End of File
