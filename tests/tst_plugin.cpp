@@ -69,6 +69,8 @@ private Q_SLOTS:
     void testAccountServiceUpdate();
     void testAuthentication_data();
     void testAuthentication();
+    void testAuthenticationErrors_data();
+    void testAuthenticationErrors();
     void testAuthenticationDeleted();
     void testAuthenticationCancel();
     void testAuthenticationWithCredentials();
@@ -888,40 +890,28 @@ void PluginTest::testAccountServiceUpdate()
 void PluginTest::testAuthentication_data()
 {
     QTest::addColumn<QString>("params");
-    QTest::addColumn<bool>("expectedSuccess");
     QTest::addColumn<QVariantMap>("expectedReply");
-    QTest::addColumn<QVariantMap>("expectedError");
 
     QVariantMap reply;
-    QVariantMap error;
 
     reply.insert("test", QString("OK"));
     reply.insert("host", QString("coolmail.ex"));
     QTest::newRow("success with params") <<
         "{ \"test\": \"OK\" }" <<
-        true << reply << error;
+        reply;
     reply.clear();
 
     reply.insert("host", QString("coolmail.ex"));
     QTest::newRow("success without params") <<
         "" <<
-        true << reply << error;
+        reply;
     reply.clear();
-
-    error.insert("code", 123);
-    error.insert("message", QString("Failed!"));
-    QTest::newRow("error") <<
-        "{ \"errorCode\": 123, \"errorMessage\": \"Failed!\" }" <<
-        false << reply << error;
-    error.clear();
 }
 
 void PluginTest::testAuthentication()
 {
     QFETCH(QString, params);
-    QFETCH(bool, expectedSuccess);
     QFETCH(QVariantMap, expectedReply);
-    QFETCH(QVariantMap, expectedError);
 
     clearDb();
 
@@ -964,16 +954,96 @@ void PluginTest::testAuthentication()
 
     QMetaObject::invokeMethod(qmlObject, "go");
 
-    QTRY_COMPARE(authenticationError.count(), expectedSuccess ? 0 :  1);
-    QTRY_COMPARE(authenticated.count(), expectedSuccess ? 1 : 0);
-    if (expectedSuccess) {
-        QVariantMap reply = authenticated.at(0).at(0).toMap();
-        QVERIFY(mapIsSubset(expectedReply, reply));
-    } else {
-        QVariantMap error = authenticationError.at(0).at(0).toMap();
-        qDebug() << error;
-        QVERIFY(mapIsSubset(expectedError, error));
-    }
+    QTRY_COMPARE(authenticated.count(), 1);
+    QCOMPARE(authenticationError.count(), 0);
+    QVariantMap reply = authenticated.at(0).at(0).toMap();
+    QVERIFY(mapIsSubset(expectedReply, reply));
+
+    delete accountService1;
+    delete manager;
+    delete qmlObject;
+}
+
+void PluginTest::testAuthenticationErrors_data()
+{
+    QTest::addColumn<QString>("params");
+    QTest::addColumn<QString>("codeName");
+    QTest::addColumn<QString>("expectedMessage");
+
+    QTest::newRow("Signon::UserCanceled") <<
+        "{ \"errorCode\": 311, \"errorMessage\": \"Failed!\" }" <<
+        "UserCanceledError" << "Failed!";
+
+    QTest::newRow("Signon::InvalidQuery") <<
+        "{ \"errorCode\": 103, \"errorMessage\": \"Weird\" }" <<
+        "NoAccountError" << "Weird";
+
+    QTest::newRow("Signon::PermissionDenied") <<
+        "{ \"errorCode\": 4, \"errorMessage\": \"Failed!\" }" <<
+        "PermissionDeniedError" << "Failed!";
+
+    QTest::newRow("Signon::NoConnection") <<
+        "{ \"errorCode\": 307, \"errorMessage\": \"Failed!\" }" <<
+        "NetworkError" << "Failed!";
+}
+
+void PluginTest::testAuthenticationErrors()
+{
+    QFETCH(QString, params);
+    QFETCH(QString, codeName);
+    QFETCH(QString, expectedMessage);
+
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Service coolShare = manager->service("coolshare");
+    Account *account1 = manager->createAccount("cool");
+    QVERIFY(account1 != 0);
+
+    account1->setEnabled(true);
+    account1->setDisplayName("CoolAccount");
+    account1->selectService(coolMail);
+    account1->setEnabled(true);
+    account1->selectService(coolShare);
+    account1->setEnabled(false);
+    account1->syncAndBlock();
+
+    AccountService *accountService1 = new AccountService(account1, coolMail);
+    QVERIFY(accountService1 != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("accountService1", accountService1);
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountService {\n"
+                      "  objectHandle: accountService1\n"
+                      "  function go() {\n"
+                      "    authenticate(" + params.toUtf8() + ")\n"
+                      "  }\n"
+                      "}",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    qDebug() << component.errors();
+    QVERIFY(qmlObject != 0);
+
+    QSignalSpy authenticationError(qmlObject,
+        SIGNAL(authenticationError(const QVariantMap &)));
+
+    QMetaObject::invokeMethod(qmlObject, "go");
+
+    QTRY_COMPARE(authenticationError.count(), 1);
+
+    QVariantMap reply = authenticationError.at(0).at(0).toMap();
+    int code = reply.value("code").toInt();
+    QString message = reply.value("message").toString();
+
+    QCOMPARE(message, expectedMessage);
+    const QMetaObject *mo = qmlObject->metaObject();
+    const QMetaEnum errorEnum =
+        mo->enumerator(mo->indexOfEnumerator("ErrorCode"));
+    QCOMPARE(code, errorEnum.keyToValue(codeName.toUtf8().constData()));
 
     delete accountService1;
     delete manager;
@@ -1102,9 +1172,10 @@ void PluginTest::testAuthenticationCancel()
     QCOMPARE(authenticationError.count(), 1);
     QVariantMap error = authenticationError.at(0).at(0).toMap();
     QVERIFY(!error.isEmpty());
-    /* 311 is the value of SignOn::Error::SessionCanceled; we prefer avoiding
-     * #including any headers from libsignon from within this file. */
-    QCOMPARE(error["code"].toInt(), 311);
+    const QMetaObject *mo = qmlObject->metaObject();
+    const QMetaEnum errorEnum =
+        mo->enumerator(mo->indexOfEnumerator("ErrorCode"));
+    QCOMPARE(error["code"].toInt(), errorEnum.keyToValue("UserCanceledError"));
     authenticationError.clear();
 
     delete accountService1;

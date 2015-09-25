@@ -45,6 +45,31 @@ static QVariantMap mergeMaps(const QVariantMap &map1,
     return map;
 }
 
+AccountService::ErrorCode errorCodeFromSignOn(int type)
+{
+    if (type <= 0) return AccountService::NoError;
+
+    switch (type) {
+    case SignOn::Error::SessionCanceled:
+    case SignOn::Error::TOSNotAccepted:
+        return AccountService::UserCanceledError;
+    case SignOn::Error::PermissionDenied:
+    case SignOn::Error::InvalidCredentials:
+    case SignOn::Error::NotAuthorized:
+    case SignOn::Error::MethodOrMechanismNotAllowed:
+        return AccountService::PermissionDeniedError;
+    case SignOn::Error::NoConnection:
+    case SignOn::Error::Network:
+        return AccountService::NetworkError;
+    case SignOn::Error::Ssl:
+        return AccountService::SslError;
+    case SignOn::Error::UserInteraction:
+        return AccountService::InteractionRequiredError;
+    default:
+        return AccountService::NoAccountError;
+    }
+}
+
 void AccountService::syncIfDesired()
 {
     if (m_autoSync) {
@@ -393,7 +418,7 @@ void AccountService::authenticate(const QVariantMap &sessionData)
     DEBUG() << sessionData;
     if (Q_UNLIKELY(accountService == 0)) {
         QVariantMap error;
-        error.insert("code", SignOn::Error::WrongState);
+        error.insert("code", NoAccountError);
         error.insert("message", QLatin1String("Invalid AccountService"));
         Q_EMIT authenticationError(error);
         return;
@@ -474,7 +499,7 @@ void AccountService::onAuthSessionResponse(const SignOn::SessionData &sessionDat
 void AccountService::onAuthSessionError(const SignOn::Error &error)
 {
     QVariantMap e;
-    e.insert("code", error.type());
+    e.insert("code", errorCodeFromSignOn(error.type()));
     e.insert("message", error.message());
     Q_EMIT authenticationError(e);
 }
