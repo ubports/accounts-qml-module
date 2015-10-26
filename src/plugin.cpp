@@ -21,6 +21,7 @@
 #include "account.h"
 #include "application-model.h"
 #include "credentials.h"
+#include "debug.h"
 #include "manager.h"
 #include "plugin.h"
 #include "provider-model.h"
@@ -40,7 +41,11 @@ static QObject *createManager(QQmlEngine *engine, QJSEngine *scriptEngine)
 
 void Plugin::registerTypes(const char *uri)
 {
-    qDebug() << Q_FUNC_INFO << uri;
+    QByteArray loggingLevelVar = qgetenv("OAQ_LOGGING_LEVEL");
+    if (!loggingLevelVar.isEmpty()) {
+        setLoggingLevel(loggingLevelVar.toInt());
+    }
+    DEBUG() << Q_FUNC_INFO << uri;
     qmlRegisterType<AccountServiceModel>(uri, 0, 1, "AccountServiceModel");
     qmlRegisterType<AccountService>(uri, 0, 1, "AccountService");
     qmlRegisterType<Account>(uri, 0, 1, "Account");

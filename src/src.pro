@@ -33,6 +33,7 @@ SOURCES += \
     application-model.cpp \
     application.cpp \
     credentials.cpp \
+    debug.cpp \
     manager.cpp \
     plugin.cpp \
     provider-model.cpp
