@@ -1,3 +1,10 @@
+accounts-qml-module (0.6+16.04.20151028-0ubuntu3) UNRELEASED; urgency=medium
+
+  * Merge from upstream:
+    - Hide debug messages by default (LP: #1404267)
+
+ -- Alberto Mardegan <alberto.mardegan@canonical.com>  Wed, 04 Nov 2015 10:15:57 +0300
+
 accounts-qml-module (0.6+16.04.20151028-0ubuntu1) xenial; urgency=medium
 
   [ Alberto Mardegan ]
