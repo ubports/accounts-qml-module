@@ -279,12 +279,19 @@ AuthSession::~AuthSession()
 {
 }
 
+const QString AuthSession::name() const
+{
+    return m_method;
+}
+
 void AuthSession::process(const SessionData &sessionData,
                           const QString &mechanism)
 {
     m_mechanism = mechanism;
     m_sessionData = sessionData.toMap();
     m_sessionData.insert("credentialsId", m_id);
+    m_sessionData.insert("method", m_method);
+    m_sessionData.insert("mechanism", mechanism);
 
     responseTimer.start();
 }

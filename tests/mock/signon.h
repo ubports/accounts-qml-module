@@ -238,6 +238,7 @@ protected:
     ~AuthSession();
 
 public:
+    const QString name() const;
     void process(const SessionData &sessionData,
                  const QString &mechanism = QString());
     void cancel();

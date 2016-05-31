@@ -99,6 +99,9 @@ public:
     QObject *credentials() const;
 
     Q_INVOKABLE void authenticate(const QVariantMap &sessionData = QVariantMap());
+    Q_INVOKABLE void authenticate(const QString &method,
+                                  const QString &mechanism,
+                                  const QVariantMap &sessionData = QVariantMap());
     Q_INVOKABLE void cancelAuthentication();
     Q_INVOKABLE void updateServiceEnabled(bool enabled);
     Q_INVOKABLE void updateSettings(const QVariantMap &settings);

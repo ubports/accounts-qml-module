@@ -75,6 +75,7 @@ private Q_SLOTS:
     void testAuthenticationDeleted();
     void testAuthenticationCancel();
     void testAuthenticationWithCredentials();
+    void testAuthenticationMethods();
     void testManagerCreate();
     void testManagerLoad();
     void testAccountInvalid();
@@ -909,6 +910,14 @@ void PluginTest::testAuthentication_data()
         "" <<
         reply;
     reply.clear();
+
+    reply.insert("method", QString("a method"));
+    reply.insert("mechanism", QString("a mechanism"));
+    reply.insert("data", QString("value"));
+    QTest::newRow("w/ method+mechanism") <<
+        "'a method', 'a mechanism', {'data':'value'}" <<
+        reply;
+    reply.clear();
 }
 
 void PluginTest::testAuthentication()
@@ -1254,6 +1263,126 @@ void PluginTest::testAuthenticationWithCredentials()
 
     delete manager;
     delete qmlAccount;
+}
+
+void PluginTest::testAuthenticationMethods()
+{
+    clearDb();
+
+    /* Create one account */
+    Manager *manager = new Manager(this);
+    Service coolMail = manager->service("coolmail");
+    Service coolShare = manager->service("coolshare");
+    Account *account1 = manager->createAccount("cool");
+    QVERIFY(account1 != 0);
+
+    account1->setEnabled(true);
+    account1->setDisplayName("CoolAccount");
+    account1->selectService(coolMail);
+    account1->setEnabled(true);
+    account1->selectService(coolShare);
+    account1->setEnabled(false);
+    account1->syncAndBlock();
+
+    AccountService *accountService1 = new AccountService(account1, coolMail);
+    QVERIFY(accountService1 != 0);
+
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty("accountService1", accountService1);
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountService {\n"
+                      "  objectHandle: accountService1\n"
+                      "}",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QSignalSpy authenticated(qmlObject,
+                             SIGNAL(authenticated(const QVariantMap &)));
+
+    QString method = "first";
+    QString mechanism = "1";
+    QVariantMap sessionData {
+        { "port", 22 },
+    };
+    QMetaObject::invokeMethod(qmlObject, "authenticate",
+                              Q_ARG(QString, method),
+                              Q_ARG(QString, mechanism),
+                              Q_ARG(QVariantMap, sessionData));
+
+    QTRY_COMPARE(authenticated.count(), 1);
+    QVariantMap reply = authenticated.at(0).at(0).toMap();
+    authenticated.clear();
+    QVariantMap expectedReply {
+        { "port", 22 },
+        { "method", "first" },
+        { "mechanism", "1" },
+    };
+    QVERIFY(mapIsSubset(expectedReply, reply));
+
+    // Authenticate with same method, different mechanism
+    mechanism = "2";
+    sessionData = QVariantMap {
+        { "host", "example.com" },
+    };
+    QMetaObject::invokeMethod(qmlObject, "authenticate",
+                              Q_ARG(QString, method),
+                              Q_ARG(QString, mechanism),
+                              Q_ARG(QVariantMap, sessionData));
+    QTRY_COMPARE(authenticated.count(), 1);
+    reply = authenticated.at(0).at(0).toMap();
+    authenticated.clear();
+    expectedReply = QVariantMap {
+        { "host", "example.com" },
+        { "method", "first" },
+        { "mechanism", "2" },
+    };
+    QVERIFY(mapIsSubset(expectedReply, reply));
+
+    // Authenticate with different method
+    method = "second";
+    mechanism = "1";
+    sessionData = QVariantMap {
+        { "true", true },
+    };
+    QMetaObject::invokeMethod(qmlObject, "authenticate",
+                              Q_ARG(QString, method),
+                              Q_ARG(QString, mechanism),
+                              Q_ARG(QVariantMap, sessionData));
+    QTRY_COMPARE(authenticated.count(), 1);
+    reply = authenticated.at(0).at(0).toMap();
+    authenticated.clear();
+    expectedReply = QVariantMap {
+        { "true", true },
+        { "method", "second" },
+        { "mechanism", "1" },
+    };
+    QVERIFY(mapIsSubset(expectedReply, reply));
+
+    // And back to the initial method
+    method = "first";
+    mechanism = "1";
+    sessionData = QVariantMap {
+        { "false", false },
+    };
+    QMetaObject::invokeMethod(qmlObject, "authenticate",
+                              Q_ARG(QString, method),
+                              Q_ARG(QString, mechanism),
+                              Q_ARG(QVariantMap, sessionData));
+    QTRY_COMPARE(authenticated.count(), 1);
+    reply = authenticated.at(0).at(0).toMap();
+    authenticated.clear();
+    expectedReply = QVariantMap {
+        { "false", false },
+        { "method", "first" },
+        { "mechanism", "1" },
+    };
+    QVERIFY(mapIsSubset(expectedReply, reply));
+
+    delete accountService1;
+    delete manager;
+    delete qmlObject;
 }
 
 void PluginTest::testManagerCreate()
