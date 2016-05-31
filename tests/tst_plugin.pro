@@ -14,7 +14,8 @@ QT += \
     testlib
 
 PKGCONFIG += \
-    accounts-qt5
+    accounts-qt5 \
+    libsignon-qt5
 
 SOURCES += \
     tst_plugin.cpp

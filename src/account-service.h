@@ -42,7 +42,7 @@ class AccountService: public QObject, public QQmlParserStatus
 {
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)
-    Q_ENUMS(ErrorCode)
+    Q_ENUMS(ErrorCode UiPolicy)
     Q_PROPERTY(QObject *objectHandle READ objectHandle \
                WRITE setObjectHandle NOTIFY objectHandleChanged)
     Q_PROPERTY(bool enabled READ enabled NOTIFY enabledChanged)
@@ -67,6 +67,14 @@ public:
         NetworkError,
         SslError,
         InteractionRequiredError,
+    };
+
+    enum UiPolicy {
+        /* Keep these in sync with those defined in SignOn/SessionData */
+        DefaultPolicy = 0,
+        RequestPasswordPolicy,
+        NoUserInteractionPolicy,
+        ValidationPolicy,
     };
 
     AccountService(QObject *parent = 0);

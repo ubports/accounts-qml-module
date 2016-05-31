@@ -26,6 +26,7 @@
 #include <QQmlEngine>
 #include <QSignalSpy>
 #include <QTest>
+#include <SignOn/SessionData>
 
 using namespace Accounts;
 
@@ -83,6 +84,8 @@ private Q_SLOTS:
     void testAccountCredentialsRemoval();
     void testAccountServiceCredentials();
     void testApplicationModel();
+    void testUiPolicy_data();
+    void testUiPolicy();
 
 private:
     void clearDb();
@@ -1764,6 +1767,47 @@ void PluginTest::testApplicationModel()
     QCOMPARE(model->rowCount(), 0);
 
     delete qmlModel;
+}
+
+void PluginTest::testUiPolicy_data()
+{
+    QTest::addColumn<QString>("name");
+    QTest::addColumn<int>("expectedValue");
+
+    QTest::newRow("default") <<
+        "AccountService.DefaultPolicy" <<
+        int(SignOn::DefaultPolicy);
+
+    QTest::newRow("request pw") <<
+        "AccountService.RequestPasswordPolicy" <<
+        int(SignOn::RequestPasswordPolicy);
+
+    QTest::newRow("no UI") <<
+        "AccountService.NoUserInteractionPolicy" <<
+        int(SignOn::NoUserInteractionPolicy);
+
+    QTest::newRow("validation") <<
+        "AccountService.ValidationPolicy" <<
+        int(SignOn::ValidationPolicy);
+}
+
+void PluginTest::testUiPolicy()
+{
+    QFETCH(QString, name);
+    QFETCH(int, expectedValue);
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Ubuntu.OnlineAccounts 0.1\n"
+                      "AccountService {\n"
+                      "  property var value: " + name.toUtf8() + "\n"
+                      "}",
+                      QUrl());
+    QObject *qmlObject = component.create();
+    QVERIFY(qmlObject != 0);
+
+    QCOMPARE(qmlObject->property("value").toInt(), expectedValue);
+    delete qmlObject;
 }
 
 QTEST_MAIN(PluginTest);
