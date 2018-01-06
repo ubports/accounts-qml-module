@@ -1,3 +1,9 @@
+accounts-qml-module (0.7+ubports) xenial; urgency=medium
+
+  * Imported to UBports
+
+ -- UBports auto importer <infra@ubports.com>  Sat, 06 Jan 2018 10:36:13 +0000
+
 accounts-qml-module (0.6+17.04.20170405-0ubuntu1) zesty; urgency=medium
 
   [ Łukasz 'sil2100' Zemczak ]
