@@ -11,8 +11,8 @@ Build-Depends: dbus-test-runner,
                qtdeclarative5-dev-tools,
                qtdeclarative5-qtquick2-plugin,
                qtchooser,
-               qt5-qmake,
-               qttools5-dev-tools,
+               qt5-default,
+               qttools5-dev-tools <!cross>,
                xvfb,
 Standards-Version: 3.9.3
 Homepage: https://launchpad.net/accounts-qml-module
@@ -46,6 +46,7 @@ Package: accounts-qml-module-doc
 Section: doc
 Architecture: all
 Multi-Arch: foreign
+Build-Profiles: <!cross>
 Depends: ${misc:Depends},
 Description: Online Accounts QML - documentation
  This module provides access to the Online Accounts framework from QML
