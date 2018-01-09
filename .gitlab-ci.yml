@@ -1,0 +1,49 @@
+image: ubuntu:xenial
+
+cache:
+  key: apt-cache
+  paths:
+  - apt-cache/
+
+before_script:
+  - export APT_CACHE_DIR=`pwd`/apt-cache && mkdir -pv $APT_CACHE_DIR
+  - apt-get update -yq && apt-get -o dir::cache::archives="$APT_CACHE_DIR" install -y qt5-qmake qtdeclarative5-dev qtdeclarative5-dev-tools qtchooser pkg-config libaccounts-qt5-dev libsignon-qt5-dev
+  - apt-get -o dir::cache::archives="$APT_CACHE_DIR" install -y dbus-test-runner xvfb qtdeclarative5-qtquick2-plugin lcov gcovr
+
+build_amd64:
+  stage: build
+  script:
+    - export QT_SELECT=qt5
+    - mkdir build
+    - cd build
+    - qmake CONFIG+=debug CONFIG+=coverage ..
+    - make -j 4
+  artifacts:
+    paths:
+      - ./
+
+test_amd64:
+  stage: test
+  script:
+    - cd build
+    - make coverage-html
+  dependencies:
+    - build_amd64
+  artifacts:
+    paths:
+      - ./
+
+pages:
+  stage: deploy
+  script:
+    - cd build
+    - make install INSTALL_ROOT=out
+    - cd ..
+    - mkdir public
+    - cp -a build/coverage-html public/coverage
+    - cp -a build/out/usr/share/accounts-qml-module/doc/html/* public
+  dependencies:
+    - test_amd64
+  artifacts:
+    paths:
+      - public

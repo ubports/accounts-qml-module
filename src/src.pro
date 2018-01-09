@@ -61,22 +61,11 @@ PLUGIN_INSTALL_BASE = $$[QT_INSTALL_QML]/$$replace(API_URI, \\., /)
 target.path = $${PLUGIN_INSTALL_BASE}
 INSTALLS += target
 
-qmldir.files = $${DESTDIR}/qmldir
+qmldir.files = $${DESTDIR}/qmldir plugin.qmltypes
 qmldir.path = $${PLUGIN_INSTALL_BASE}
 INSTALLS += qmldir
 
-generateQmlTypes.output = $${DESTDIR}/plugin.qmltypes
-generateQmlTypes.input = QML_PLUGINS
-generateQmlTypes.commands = export LD_PRELOAD=${QMAKE_FILE_IN}; $$[QT_INSTALL_BINS]/qmlplugindump -notrelocatable $${API_URI} 0.1 . > ${QMAKE_FILE_OUT}
-generateQmlTypes.name = Generate ${QMAKE_FILE_OUT}
-generateQmlTypes.CONFIG += no_link
-generateQmlTypes.variable_out = QML_TYPES
-QMAKE_EXTRA_COMPILERS += generateQmlTypes
-
 QML_PLUGINS += $${DESTDIR}/lib$${TARGET}.so
-
-qmltypes.path = $${PLUGIN_INSTALL_BASE}
-qmltypes.files = $${DESTDIR}/plugin.qmltypes
-qmltypes.depends = $${DESTDIR}/plugin.qmltypes
-qmltypes.CONFIG += no_check_exist
-INSTALLS += qmltypes
+qmltypes.commands = export LD_PRELOAD=$${QML_PLUGINS}; $$[QT_INSTALL_BINS]/qmlplugindump -notrelocatable $${API_URI} 0.1 . > $$PWD/plugin.qmltypes
+qmltypes.depends = $${QML_PLUGINS}
+QMAKE_EXTRA_TARGETS += qmltypes
