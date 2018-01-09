@@ -1,0 +1,33 @@
+/*
+ * Copyright (C) 2016 Canonical Ltd.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; version 3.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*!
+\page index.html index
+\title Accounts QML module
+\brief This module provides QML bindings for Online Accounts
+
+The Online Accounts API allows applications to access the user's accounts in
+order to perform tasks such as OAuth authentication or plain password
+retrieval.
+
+Given the wide variety of environment in which this system has been
+deployed, with different scopes, UI flows and security policies, it's
+unpractical to present here a tutorial or a developer guide: for that, the
+developer is invited to consult the documentation provided by the SDK in use.
+
+This pages contain the reference documentation for the \l{Ubuntu OnlineAccounts}{API} and \l{Manifest files}{manifest files}
+used by this module.
+ */

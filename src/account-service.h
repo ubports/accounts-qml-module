@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Canonical Ltd.
+ * Copyright (C) 2013-2016 Canonical Ltd.
  *
  * Contact: Alberto Mardegan <alberto.mardegan@canonical.com>
  *
@@ -42,7 +42,7 @@ class AccountService: public QObject, public QQmlParserStatus
 {
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)
-    Q_ENUMS(ErrorCode)
+    Q_ENUMS(ErrorCode UiPolicy)
     Q_PROPERTY(QObject *objectHandle READ objectHandle \
                WRITE setObjectHandle NOTIFY objectHandleChanged)
     Q_PROPERTY(bool enabled READ enabled NOTIFY enabledChanged)
@@ -69,6 +69,14 @@ public:
         InteractionRequiredError,
     };
 
+    enum UiPolicy {
+        /* Keep these in sync with those defined in SignOn/SessionData */
+        DefaultPolicy = 0,
+        RequestPasswordPolicy,
+        NoUserInteractionPolicy,
+        ValidationPolicy,
+    };
+
     AccountService(QObject *parent = 0);
     ~AccountService();
 
@@ -91,6 +99,9 @@ public:
     QObject *credentials() const;
 
     Q_INVOKABLE void authenticate(const QVariantMap &sessionData = QVariantMap());
+    Q_INVOKABLE void authenticate(const QString &method,
+                                  const QString &mechanism,
+                                  const QVariantMap &sessionData = QVariantMap());
     Q_INVOKABLE void cancelAuthentication();
     Q_INVOKABLE void updateServiceEnabled(bool enabled);
     Q_INVOKABLE void updateSettings(const QVariantMap &settings);

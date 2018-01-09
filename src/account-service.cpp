@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Canonical Ltd.
+ * Copyright (C) 2013-2016 Canonical Ltd.
  *
  * Contact: Alberto Mardegan <alberto.mardegan@canonical.com>
  *
@@ -403,8 +403,10 @@ void AccountService::updateSettings(const QVariantMap &settings)
 /*!
  * \qmlmethod void AccountService::authenticate(jsobject sessionData)
  *
- * Perform the authentication on this account. The \a sessionData dictionary is
- * optional and if not given the value of \l {authData}{authData::parameters} will be used.
+ * Perform the authentication on this account, by the method and mechanism
+ * specified in the \l authData dictionary of this account.
+ * The \a sessionData dictionary is optional and if not given the value of
+ * \l {authData}{authData::parameters} will be used.
  *
  * Each call to this method will cause either of \l authenticated or
  * \l authenticationError signals to be emitted at some time later. Note that
@@ -414,6 +416,27 @@ void AccountService::updateSettings(const QVariantMap &settings)
  * \sa authenticated, authenticationError
  */
 void AccountService::authenticate(const QVariantMap &sessionData)
+{
+    authenticate(QString(), QString(), sessionData);
+}
+
+/*!
+ * \qmlmethod void AccountService::authenticate(string method, string mechanism, jsobject sessionData)
+ *
+ * Perform the authentication on this account.
+ * The \a sessionData dictionary is optional and if not given the value of
+ * \l {authData}{authData::parameters} will be used.
+ *
+ * Each call to this method will cause either of \l authenticated or
+ * \l authenticationError signals to be emitted at some time later. Note that
+ * the authentication might involve interactions with the network or with the
+ * end-user, so don't expect these signals to be emitted immediately.
+ *
+ * \sa authenticated, authenticationError
+ */
+void AccountService::authenticate(const QString &method,
+                                  const QString &mechanism,
+                                  const QVariantMap &sessionData)
 {
     DEBUG() << sessionData;
     if (Q_UNLIKELY(accountService == 0)) {
@@ -425,6 +448,24 @@ void AccountService::authenticate(const QVariantMap &sessionData)
     }
 
     Accounts::AuthData authData = accountService->authData();
+    QString usedMethod = method.isEmpty() ? authData.method() : method;
+    QString usedMechanism =
+        mechanism.isEmpty() ? authData.mechanism() : mechanism;
+
+    /* Due to https://gitlab.com/accounts-sso/signond/issues/2 we cannot freely
+     * get new authSessions out of the same Identity object: createSession()
+     * returns 0 if a session already exists for the requested method.
+     * There are two possible workarounds:
+     * 1) Keep a map or methods : authSessions
+     * 2) Destroy the identity and get a new one
+     * The latter seems simpler and less wasteful of memory resources, so
+     * that's our choice here.
+     */
+    if (authSession && usedMethod != authSession->name()) {
+        delete identity;
+        identity = 0;
+    }
+
     if (identity == 0) {
         quint32 credentialsId = credentialsIdProperty.read().toUInt();
         if (credentialsId == 0)
@@ -433,7 +474,7 @@ void AccountService::authenticate(const QVariantMap &sessionData)
             SignOn::Identity::existingIdentity(credentialsId, this);
     }
     if (authSession == 0) {
-        authSession = identity->createSession(authData.method());
+        authSession = identity->createSession(usedMethod);
         QObject::connect(authSession, SIGNAL(response(const SignOn::SessionData&)),
                          this,
                          SLOT(onAuthSessionResponse(const SignOn::SessionData&)));
@@ -443,7 +484,7 @@ void AccountService::authenticate(const QVariantMap &sessionData)
 
     QVariantMap allSessionData = mergeMaps(authData.parameters(),
                                            sessionData);
-    authSession->process(allSessionData, authData.mechanism());
+    authSession->process(allSessionData, usedMechanism);
 }
 
 /*!

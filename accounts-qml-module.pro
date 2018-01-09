@@ -1,6 +1,6 @@
 include(common-vars.pri)
 include(common-project-config.pri)
-include(doc/doc.pri)
+!CONFIG(no_docs): include(doc/doc.pri)
 
 TEMPLATE = subdirs
 CONFIG += ordered
