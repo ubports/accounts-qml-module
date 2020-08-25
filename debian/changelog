@@ -1,8 +1,9 @@
-accounts-qml-module (0.7+ubportsubuntu1) UNRELEASED; urgency=medium
+accounts-qml-module (0.7.1~ubports1) xenial; urgency=medium
 
-  * No change rebuild to generate sources in ubports repo
+  * Update QML module dependencies.
+  * Bump version.
 
- -- Dan Chapman <dan@ubports.com>  Tue, 20 Feb 2018 08:10:18 +0000
+ -- Rodney Dawes <dobey@ubports.com>  Wed, 26 Aug 2020 17:30:12 -0400
 
 accounts-qml-module (0.7+ubports) xenial; urgency=medium
 
